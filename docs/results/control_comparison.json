@@ -1,0 +1,57 @@
+{
+  "h1_eFalse": {
+    "success_rate": 0.0,
+    "max_reward_mean": 0.3336294603931169,
+    "policy_latency_ms": 1.043028234889789,
+    "action_delta_mse": 0.07124079789465407,
+    "episodes": 2,
+    "seed_start": 10000,
+    "execution_horizon": 1,
+    "temporal_ensemble": false,
+    "max_steps": 100
+  },
+  "h1_eTrue": {
+    "success_rate": 0.0,
+    "max_reward_mean": 0.3336294603931169,
+    "policy_latency_ms": 1.0631578900211025,
+    "action_delta_mse": 0.05285238924230172,
+    "episodes": 2,
+    "seed_start": 10000,
+    "execution_horizon": 1,
+    "temporal_ensemble": true,
+    "max_steps": 100
+  },
+  "h2_eFalse": {
+    "success_rate": 0.0,
+    "max_reward_mean": 0.3336294603931169,
+    "policy_latency_ms": 1.1285516199131962,
+    "action_delta_mse": 9.07483164469401,
+    "episodes": 2,
+    "seed_start": 10000,
+    "execution_horizon": 2,
+    "temporal_ensemble": false,
+    "max_steps": 100
+  },
+  "h4_eFalse": {
+    "success_rate": 0.0,
+    "max_reward_mean": 0.3336294603931169,
+    "policy_latency_ms": 1.1605508402135456,
+    "action_delta_mse": 4.693152243139768,
+    "episodes": 2,
+    "seed_start": 10000,
+    "execution_horizon": 4,
+    "temporal_ensemble": false,
+    "max_steps": 100
+  },
+  "official_act": {
+    "success_rate": 0.0,
+    "max_reward_mean": 0.3336294603931169,
+    "policy_latency_ms": 7.114589429984335,
+    "action_delta_mse": 2.269901323275678,
+    "episodes": 2,
+    "seed_start": 10000,
+    "execution_horizon": 1,
+    "temporal_ensemble": false,
+    "max_steps": 100
+  }
+}

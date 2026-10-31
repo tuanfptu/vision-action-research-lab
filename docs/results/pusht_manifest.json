@@ -1,0 +1,13 @@
+{
+  "repo_id": "lerobot/pusht_image",
+  "revision": "96d10ccbf94cb6ab28fb73431272fc8651141a5d",
+  "episodes": 6,
+  "fps": 10,
+  "resize": [
+    32,
+    32
+  ],
+  "license": "MIT",
+  "action_schema": "absolute PushT agent target xy, simulator pixel coordinates",
+  "sha256": "f644b9df111c2e3e1b42e13421686f1bc88a483cc7238ef43e5a553dba4dc220"
+}

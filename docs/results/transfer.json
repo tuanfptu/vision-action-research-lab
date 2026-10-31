@@ -1,0 +1,46 @@
+{
+  "random": {
+    "normalized_action_mse": 1.180337933037016,
+    "normalized_chunk_delta_mse": 0.010955134463129622,
+    "batch_latency_ms_mean": 0.6498721662258807,
+    "evaluated_action_scalars": 360,
+    "sampling_steps": 10,
+    "scope": "held-out episodes, offline; not closed-loop success",
+    "checkpoint": "runs/transfer_verified/random/best.pt",
+    "device": "cpu",
+    "epoch": 1
+  },
+  "frozen": {
+    "normalized_action_mse": 0.8534807235002517,
+    "normalized_chunk_delta_mse": 0.038517174113428955,
+    "batch_latency_ms_mean": 0.6361133340154387,
+    "evaluated_action_scalars": 360,
+    "sampling_steps": 10,
+    "scope": "held-out episodes, offline; not closed-loop success",
+    "checkpoint": "runs/transfer_verified/frozen/best.pt",
+    "device": "cpu",
+    "epoch": 1
+  },
+  "partial": {
+    "normalized_action_mse": 0.6683400763405694,
+    "normalized_chunk_delta_mse": 0.06092496521093629,
+    "batch_latency_ms_mean": 0.6668201664676113,
+    "evaluated_action_scalars": 360,
+    "sampling_steps": 10,
+    "scope": "held-out episodes, offline; not closed-loop success",
+    "checkpoint": "runs/transfer_verified/partial/best.pt",
+    "device": "cpu",
+    "epoch": 1
+  },
+  "full": {
+    "normalized_action_mse": 0.5409233152866364,
+    "normalized_chunk_delta_mse": 0.058208452481212036,
+    "batch_latency_ms_mean": 0.6684029995085439,
+    "evaluated_action_scalars": 360,
+    "sampling_steps": 10,
+    "scope": "held-out episodes, offline; not closed-loop success",
+    "checkpoint": "runs/transfer_verified/full/best.pt",
+    "device": "cpu",
+    "epoch": 1
+  }
+}

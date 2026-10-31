@@ -1,0 +1,11 @@
+{
+  "normalized_action_mse": 0.8207466719794447,
+  "normalized_chunk_delta_mse": 0.7718724255451207,
+  "batch_latency_ms_mean": 1.760677056881832,
+  "evaluated_action_scalars": 2192,
+  "sampling_steps": 10,
+  "scope": "held-out episodes, offline; not closed-loop success",
+  "checkpoint": "runs/pusht_flow/best.pt",
+  "device": "cpu",
+  "epoch": 1
+}

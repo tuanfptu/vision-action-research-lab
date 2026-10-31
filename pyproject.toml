@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "vision-action-research-lab"
+version = "0.1.0"
+description = "Independent educational Vision–Action robot learning experiments"
+requires-python = ">=3.10,<3.13"
+dependencies = ["torch==2.7.1", "torchvision==0.22.1", "numpy==2.2.6", "Pillow>=10,<12", "PyYAML==6.0.2", "matplotlib>=3.9,<3.11"]
+[project.optional-dependencies]
+research = ["lerobot[pusht]==0.3.3", "mujoco==3.3.2", "torchcodec==0.4.0", "huggingface-hub==0.35.3", "diffusers==0.35.1", "av==16.0.1"]
+dev = ["pytest==8.4.2", "ruff==0.14.3"]
+[project.scripts]
+va-lab = "va_lab.cli:main"
+[tool.setuptools.packages.find]
+where = ["src"]
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+[tool.ruff]
+line-length = 100
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]

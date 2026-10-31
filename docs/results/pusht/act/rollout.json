@@ -1,0 +1,11 @@
+{
+  "success_rate": 0.0,
+  "max_reward_mean": 0.3336294603931169,
+  "policy_latency_ms": 1.040352070122026,
+  "action_delta_mse": 0.07124079789465407,
+  "episodes": 2,
+  "seed_start": 10000,
+  "execution_horizon": 1,
+  "temporal_ensemble": false,
+  "max_steps": 100
+}

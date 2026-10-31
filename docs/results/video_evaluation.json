@@ -1,0 +1,11 @@
+{
+  "normalized_action_mse": 0.4749233483164399,
+  "normalized_chunk_delta_mse": 0.031363302785338776,
+  "batch_latency_ms_mean": 1.2008724443148822,
+  "evaluated_action_scalars": 540,
+  "sampling_steps": 10,
+  "scope": "held-out episodes, offline; not closed-loop success",
+  "checkpoint": "runs/verified_video/best.pt",
+  "device": "cpu",
+  "epoch": 1
+}

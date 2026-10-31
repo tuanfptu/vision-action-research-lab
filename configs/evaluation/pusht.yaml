@@ -1,0 +1,5 @@
+episodes: 10
+seed_start: 10000
+max_steps: 300
+horizons: [1, 2, 4]
+metrics: [success_rate, max_reward_mean, policy_latency_ms, action_delta_mse]

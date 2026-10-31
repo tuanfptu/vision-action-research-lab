@@ -1,0 +1,6 @@
+# Consumed by scripts/ablate.py; never change data or seed between paired models.
+chunks: [1, 4, 8]
+latents: [4, 8]
+betas: [0.0, 0.01]
+execution_horizons: [1, 2]
+temporal_ensemble: [false, true]

@@ -1,0 +1,11 @@
+model: bc
+seed: 7
+device: cuda
+batch_size: 64
+dim: 128
+chunk: 4
+latent: 8
+beta: 0.01
+lr: 0.001
+epochs: 100
+sampling_steps: 10

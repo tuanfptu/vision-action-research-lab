@@ -1,0 +1,1 @@
+"""Independent laboratory components."""

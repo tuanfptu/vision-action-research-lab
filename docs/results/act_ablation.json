@@ -1,0 +1,316 @@
+{
+  "results": [
+    {
+      "config": {
+        "model": "act",
+        "seed": 7,
+        "device": "cpu",
+        "batch_size": 8,
+        "dim": 64,
+        "chunk": 1,
+        "latent": 4,
+        "beta": 0.0,
+        "lr": 0.001,
+        "epochs": 2,
+        "sampling_steps": 10
+      },
+      "offline": {
+        "normalized_action_mse": 0.924409376250373,
+        "normalized_chunk_delta_mse": 0.0,
+        "batch_latency_ms_mean": 1.398553999832883,
+        "evaluated_action_scalars": 144,
+        "sampling_steps": 10,
+        "scope": "held-out episodes, offline; not closed-loop success",
+        "checkpoint": "runs/ablation_verified/chunk1_latent4_beta0.0/best.pt",
+        "device": "cpu",
+        "epoch": 1
+      }
+    },
+    {
+      "config": {
+        "model": "act",
+        "seed": 7,
+        "device": "cpu",
+        "batch_size": 8,
+        "dim": 64,
+        "chunk": 1,
+        "latent": 4,
+        "beta": 0.01,
+        "lr": 0.001,
+        "epochs": 2,
+        "sampling_steps": 10
+      },
+      "offline": {
+        "normalized_action_mse": 0.9705434590578079,
+        "normalized_chunk_delta_mse": 0.0,
+        "batch_latency_ms_mean": 1.2293058882480383,
+        "evaluated_action_scalars": 144,
+        "sampling_steps": 10,
+        "scope": "held-out episodes, offline; not closed-loop success",
+        "checkpoint": "runs/ablation_verified/chunk1_latent4_beta0.01/best.pt",
+        "device": "cpu",
+        "epoch": 1
+      }
+    },
+    {
+      "config": {
+        "model": "act",
+        "seed": 7,
+        "device": "cpu",
+        "batch_size": 8,
+        "dim": 64,
+        "chunk": 1,
+        "latent": 8,
+        "beta": 0.0,
+        "lr": 0.001,
+        "epochs": 2,
+        "sampling_steps": 10
+      },
+      "offline": {
+        "normalized_action_mse": 0.9042074175344573,
+        "normalized_chunk_delta_mse": 0.0,
+        "batch_latency_ms_mean": 1.4289508888193976,
+        "evaluated_action_scalars": 144,
+        "sampling_steps": 10,
+        "scope": "held-out episodes, offline; not closed-loop success",
+        "checkpoint": "runs/ablation_verified/chunk1_latent8_beta0.0/best.pt",
+        "device": "cpu",
+        "epoch": 0
+      }
+    },
+    {
+      "config": {
+        "model": "act",
+        "seed": 7,
+        "device": "cpu",
+        "batch_size": 8,
+        "dim": 64,
+        "chunk": 1,
+        "latent": 8,
+        "beta": 0.01,
+        "lr": 0.001,
+        "epochs": 2,
+        "sampling_steps": 10
+      },
+      "offline": {
+        "normalized_action_mse": 0.9305506216155158,
+        "normalized_chunk_delta_mse": 0.0,
+        "batch_latency_ms_mean": 1.3308081118642197,
+        "evaluated_action_scalars": 144,
+        "sampling_steps": 10,
+        "scope": "held-out episodes, offline; not closed-loop success",
+        "checkpoint": "runs/ablation_verified/chunk1_latent8_beta0.01/best.pt",
+        "device": "cpu",
+        "epoch": 1
+      }
+    },
+    {
+      "config": {
+        "model": "act",
+        "seed": 7,
+        "device": "cpu",
+        "batch_size": 8,
+        "dim": 64,
+        "chunk": 4,
+        "latent": 4,
+        "beta": 0.0,
+        "lr": 0.001,
+        "epochs": 2,
+        "sampling_steps": 10
+      },
+      "offline": {
+        "normalized_action_mse": 0.9345807025829951,
+        "normalized_chunk_delta_mse": 0.007556477806182823,
+        "batch_latency_ms_mean": 1.8594984442946345,
+        "evaluated_action_scalars": 540,
+        "sampling_steps": 10,
+        "scope": "held-out episodes, offline; not closed-loop success",
+        "checkpoint": "runs/ablation_verified/chunk4_latent4_beta0.0/best.pt",
+        "device": "cpu",
+        "epoch": 1
+      }
+    },
+    {
+      "config": {
+        "model": "act",
+        "seed": 7,
+        "device": "cpu",
+        "batch_size": 8,
+        "dim": 64,
+        "chunk": 4,
+        "latent": 4,
+        "beta": 0.01,
+        "lr": 0.001,
+        "epochs": 2,
+        "sampling_steps": 10
+      },
+      "offline": {
+        "normalized_action_mse": 0.8911458670541093,
+        "normalized_chunk_delta_mse": 0.006435279894356776,
+        "batch_latency_ms_mean": 1.4597118893612384,
+        "evaluated_action_scalars": 540,
+        "sampling_steps": 10,
+        "scope": "held-out episodes, offline; not closed-loop success",
+        "checkpoint": "runs/ablation_verified/chunk4_latent4_beta0.01/best.pt",
+        "device": "cpu",
+        "epoch": 1
+      }
+    },
+    {
+      "config": {
+        "model": "act",
+        "seed": 7,
+        "device": "cpu",
+        "batch_size": 8,
+        "dim": 64,
+        "chunk": 4,
+        "latent": 8,
+        "beta": 0.0,
+        "lr": 0.001,
+        "epochs": 2,
+        "sampling_steps": 10
+      },
+      "offline": {
+        "normalized_action_mse": 0.9938048084576925,
+        "normalized_chunk_delta_mse": 0.0035225982693108645,
+        "batch_latency_ms_mean": 1.406679222175929,
+        "evaluated_action_scalars": 540,
+        "sampling_steps": 10,
+        "scope": "held-out episodes, offline; not closed-loop success",
+        "checkpoint": "runs/ablation_verified/chunk4_latent8_beta0.0/best.pt",
+        "device": "cpu",
+        "epoch": 1
+      }
+    },
+    {
+      "config": {
+        "model": "act",
+        "seed": 7,
+        "device": "cpu",
+        "batch_size": 8,
+        "dim": 64,
+        "chunk": 4,
+        "latent": 8,
+        "beta": 0.01,
+        "lr": 0.001,
+        "epochs": 2,
+        "sampling_steps": 10
+      },
+      "offline": {
+        "normalized_action_mse": 0.9674430548040955,
+        "normalized_chunk_delta_mse": 0.008971172827060777,
+        "batch_latency_ms_mean": 1.3732250000531268,
+        "evaluated_action_scalars": 540,
+        "sampling_steps": 10,
+        "scope": "held-out episodes, offline; not closed-loop success",
+        "checkpoint": "runs/ablation_verified/chunk4_latent8_beta0.01/best.pt",
+        "device": "cpu",
+        "epoch": 0
+      }
+    },
+    {
+      "config": {
+        "model": "act",
+        "seed": 7,
+        "device": "cpu",
+        "batch_size": 8,
+        "dim": 64,
+        "chunk": 8,
+        "latent": 4,
+        "beta": 0.0,
+        "lr": 0.001,
+        "epochs": 2,
+        "sampling_steps": 10
+      },
+      "offline": {
+        "normalized_action_mse": 0.9372604134969595,
+        "normalized_chunk_delta_mse": 0.005541614833332244,
+        "batch_latency_ms_mean": 1.4002534444443882,
+        "evaluated_action_scalars": 984,
+        "sampling_steps": 10,
+        "scope": "held-out episodes, offline; not closed-loop success",
+        "checkpoint": "runs/ablation_verified/chunk8_latent4_beta0.0/best.pt",
+        "device": "cpu",
+        "epoch": 0
+      }
+    },
+    {
+      "config": {
+        "model": "act",
+        "seed": 7,
+        "device": "cpu",
+        "batch_size": 8,
+        "dim": 64,
+        "chunk": 8,
+        "latent": 4,
+        "beta": 0.01,
+        "lr": 0.001,
+        "epochs": 2,
+        "sampling_steps": 10
+      },
+      "offline": {
+        "normalized_action_mse": 0.9112708865384745,
+        "normalized_chunk_delta_mse": 0.006061172024125145,
+        "batch_latency_ms_mean": 1.5323156662311197,
+        "evaluated_action_scalars": 984,
+        "sampling_steps": 10,
+        "scope": "held-out episodes, offline; not closed-loop success",
+        "checkpoint": "runs/ablation_verified/chunk8_latent4_beta0.01/best.pt",
+        "device": "cpu",
+        "epoch": 0
+      }
+    },
+    {
+      "config": {
+        "model": "act",
+        "seed": 7,
+        "device": "cpu",
+        "batch_size": 8,
+        "dim": 64,
+        "chunk": 8,
+        "latent": 8,
+        "beta": 0.0,
+        "lr": 0.001,
+        "epochs": 2,
+        "sampling_steps": 10
+      },
+      "offline": {
+        "normalized_action_mse": 0.8068489827881984,
+        "normalized_chunk_delta_mse": 0.00550342762754077,
+        "batch_latency_ms_mean": 1.4685742219929427,
+        "evaluated_action_scalars": 984,
+        "sampling_steps": 10,
+        "scope": "held-out episodes, offline; not closed-loop success",
+        "checkpoint": "runs/ablation_verified/chunk8_latent8_beta0.0/best.pt",
+        "device": "cpu",
+        "epoch": 1
+      }
+    },
+    {
+      "config": {
+        "model": "act",
+        "seed": 7,
+        "device": "cpu",
+        "batch_size": 8,
+        "dim": 64,
+        "chunk": 8,
+        "latent": 8,
+        "beta": 0.01,
+        "lr": 0.001,
+        "epochs": 2,
+        "sampling_steps": 10
+      },
+      "offline": {
+        "normalized_action_mse": 0.795449149560153,
+        "normalized_chunk_delta_mse": 0.0026277877922569,
+        "batch_latency_ms_mean": 1.4938796674768027,
+        "evaluated_action_scalars": 984,
+        "sampling_steps": 10,
+        "scope": "held-out episodes, offline; not closed-loop success",
+        "checkpoint": "runs/ablation_verified/chunk8_latent8_beta0.01/best.pt",
+        "device": "cpu",
+        "epoch": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "act_loss": 26.070526123046875,
+  "features": "{'observation.image': {'dtype': 'image', 'shape': (96, 96, 3), 'names': ['height', 'width', 'channel']}, 'observation.state': {'dtype': 'float32', 'shape': (2,), 'names': {'motors': ['motor_0', 'motor_1']}}, 'action': {'dtype': 'float32', 'shape': (2,), 'names': {'motors': ['motor_0', 'motor_1']}}, 'episode_index': {'dtype': 'int64', 'shape': (1,), 'names': None}, 'frame_index': {'dtype': 'int64', 'shape': (1,), 'names': None}, 'timestamp': {'dtype': 'float32', 'shape': (1,), 'names': None}, 'next.reward': {'dtype': 'float32', 'shape': (1,), 'names': None}, 'next.done': {'dtype': 'bool', 'shape': (1,), 'names': None}, 'next.success': {'dtype': 'bool', 'shape': (1,), 'names': None}, 'index': {'dtype': 'int64', 'shape': (1,), 'names': None}, 'task_index': {'dtype': 'int64', 'shape': (1,), 'names': None}}",
+  "official_dataset_length": 161,
+  "official_sample_shapes": {
+    "observation.image": [
+      3,
+      96,
+      96
+    ],
+    "observation.state": [
+      2
+    ],
+    "action": [
+      2
+    ],
+    "episode_index": [],
+    "frame_index": [],
+    "timestamp": [],
+    "next.reward": [],
+    "next.done": [],
+    "next.success": [],
+    "index": [],
+    "task_index": []
+  }
+}
