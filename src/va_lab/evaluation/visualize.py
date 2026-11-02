@@ -11,6 +11,7 @@ import torch
 
 from va_lab.datasets.core import Windows, read_arrays
 from va_lab.training.engine import load_checkpoint
+from va_lab.utils.runtime import write_json
 
 
 def inspect(data: str, output: str) -> dict:
@@ -54,7 +55,11 @@ def inspect(data: str, output: str) -> dict:
 
 
 def video(checkpoint: str, data: str, output: str) -> None:
-    model, ckpt = load_checkpoint(checkpoint, "cpu")
+    saved = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    device = saved["config"]["device"]
+    if device.startswith("cuda") and not torch.cuda.is_available():
+        raise RuntimeError("GPU required for video inference; no CPU fallback")
+    model, ckpt = load_checkpoint(checkpoint, device)
     cfg = ckpt["config"]
     if cfg["model"] != "video":
         raise ValueError("Video checkpoint required")
@@ -66,14 +71,24 @@ def video(checkpoint: str, data: str, output: str) -> None:
         ckpt["camera_indices"],
         cfg.get("history", 2),
     )
-    batch = {k: v[None] for k, v in ds[0].items()}
+    batch = {k: v[None].to(device) for k, v in ds[0].items()}
     with torch.no_grad():
         _, pred = model.forward_video(batch)
+    write_json(
+        Path(output).with_suffix(".inference.json"),
+        {
+            "device": str(next(model.parameters()).device),
+            "future_shape": list(pred.shape),
+            "checkpoint": checkpoint,
+        },
+    )
+    pred = pred.cpu()
+    truth = batch["future"].cpu()
     k, v = pred.shape[1:3]
     fig, axes = plt.subplots(v * 2, k, figsize=(2 * k, 3 * v), squeeze=False)
     for camera in range(v):
         for t in range(k):
-            axes[2 * camera, t].imshow(batch["future"][0, t, camera].permute(1, 2, 0))
+            axes[2 * camera, t].imshow(truth[0, t, camera].permute(1, 2, 0))
             axes[2 * camera + 1, t].imshow(pred[0, t, camera].permute(1, 2, 0))
             axes[2 * camera, t].set_title(f"{cfg['cameras'][camera]} truth +{t + 1}")
             axes[2 * camera + 1, t].set_title("Prediction")

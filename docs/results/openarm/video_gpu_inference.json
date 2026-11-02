@@ -1,0 +1,12 @@
+{
+  "device": "cuda:0",
+  "future_shape": [
+    1,
+    4,
+    2,
+    3,
+    16,
+    16
+  ],
+  "checkpoint": "runs/openarm_gpu_video/best.pt"
+}
