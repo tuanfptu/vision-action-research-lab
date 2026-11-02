@@ -1,43 +1,41 @@
-# Tái lập các lệnh đã chạy
-
-Chạy từ repository root trong `.venv`. Tất cả commands dùng `unset PYTHONPATH` để tránh
-ROS Python path. Không cần previous repository. CPU environment snapshot ở
-requirements-cpu.lock.txt; normal setup ở scripts/setup.sh.
+# Tái lập migration OpenArm trên GPU
 
 ```bash
-source .venv/bin/activate
+cd ~/vision-action-research-lab
+bash scripts/setup_gpu.sh
+source .venv-gpu/bin/activate
 unset PYTHONPATH
 export HF_HOME="$PWD/data/hf"
-export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
-va-lab doctor
+export MUJOCO_GL=egl
+va-lab doctor --require-gpu
 va-lab verify-lerobot
-va-lab generate --output data/synthetic.npz --episodes 12 --seed 7
-va-lab download --output data/pusht.npz --episodes 6 --revision 96d10ccbf94cb6ab28fb73431272fc8651141a5d
-for model in bc state act flow official_act; do
-  va-lab train --data data/pusht.npz --model "$model" --output "runs/reproduce_$model"
-done
-va-lab train --data data/pusht.npz --model diffusion --output runs/reproduce_diffusion
-python scripts/ablate.py --data data/synthetic.npz --output runs/reproduce_ablation
-va-lab generate --episodes 8 --seed 17 --output data/target.npz
-python scripts/transfer.py --source data/synthetic.npz --target data/target.npz --output runs/reproduce_transfer
-va-lab train --data data/synthetic.npz --model video --output runs/reproduce_video
-va-lab video --checkpoint runs/reproduce_video/best.pt --data data/synthetic.npz
-va-lab record --episodes 5 --seed 17 --output data/reacher.npz
-va-lab train --data data/reacher.npz --model bc --output runs/reproduce_reacher
-va-lab hierarchy --checkpoint runs/reproduce_reacher/best.pt
-make test lint
+va-lab download --episodes 30 --cameras ceiling wrist_right --size 32
+va-lab inspect
+va-lab train --model bc --output runs/my_openarm_bc
+va-lab train --model state --output runs/my_openarm_state
+va-lab train --model act --output runs/my_openarm_act
+va-lab train --model official_act --output runs/my_openarm_official_act
+va-lab train --model diffusion --output runs/my_openarm_diffusion
+va-lab train --model flow --output runs/my_openarm_flow
+va-lab train --model video --output runs/my_openarm_video
+va-lab video --checkpoint runs/my_openarm_video/best.pt
+python scripts/ablate.py --output runs/my_openarm_ablation --grid configs/models/act_smoke_ablation.yaml
+python scripts/transfer.py --output runs/my_openarm_transfer
+va-lab assets
+va-lab sim-smoke --render
+va-lab rollout --checkpoint runs/my_openarm_bc/best.pt --allow-unverified-scene
+va-lab record --output data/my_openarm_collected.npz
+VA_LAB_INTEGRATION=1 make test
+make lint
 ```
 
-Các job đo PushT trong validation dùng 2 episode seed 10000/10001, h=1. CLI rollout mặc
-định 300 steps; để tái lập smoke 100 steps, gọi API rõ budget:
+Skip download if data/openarm.npz already exists. All exports and experiment directories
+must be new; no silent overwrite. Standard training uses validation only; the untouched
+final episode set is accessed only by explicit `evaluate --split test` after model selection.
+GPU logs identify the actual device, CUDA runtime and peak allocated VRAM. CPU tests can run
+separately with `make test PY=.venv/bin/python`; this is not a substitute for CUDA training.
 
-```python
-from va_lab.simulation.benchmark import pusht_rollout
-pusht_rollout("runs/reproduce_bc/best.pt", "runs/reproduce_bc/rollout.json",
-              episodes=2, max_steps=100)
-```
-
-Mỗi output directory phải mới; train từ chối overwrite. So configs/splits/hashes trước khi
-so số. Latency không tái lập bitwise. Training budget smoke rất nhỏ; tăng epochs trong bản
-sao CPU config và tăng số episode trước khi nghiên cứu performance. Tạo untouched test
-split trước khi chọn kiến trúc nếu mục tiêu là báo cáo kết quả nghiên cứu.
+All five original video views are acquired for each requested episode. To export five-view
+or higher-resolution training caches, choose a new output file, all desired camera names and
+--size. Match cameras/image_size in the training YAML. Named camera selection may reduce a
+larger cache to a subset without changing episode splits or action coordinates.

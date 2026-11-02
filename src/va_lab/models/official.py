@@ -12,12 +12,24 @@ class OfficialACT(nn.Module):
         from lerobot.policies.act.modeling_act import ACTPolicy
 
         # Outer pipeline already normalizes state/action. Identity avoids double normalization.
+        self.cameras = cfg["cameras"]
+        features = {
+            "observation.state": PolicyFeature(type=FeatureType.STATE, shape=(cfg["state_dim"],))
+        }
+        features.update(
+            {
+                f"observation.images.{camera}": PolicyFeature(
+                    type=FeatureType.VISUAL, shape=(3, cfg["image_size"], cfg["image_size"])
+                )
+                for camera in self.cameras
+            }
+        )
         config = ACTConfig(
-            input_features={
-                "observation.state": PolicyFeature(type=FeatureType.STATE, shape=(2,)),
-                "observation.images.top": PolicyFeature(type=FeatureType.VISUAL, shape=(3, 32, 32)),
+            device=cfg["device"],
+            input_features=features,
+            output_features={
+                "action": PolicyFeature(type=FeatureType.ACTION, shape=(cfg["action_dim"],))
             },
-            output_features={"action": PolicyFeature(type=FeatureType.ACTION, shape=(2,))},
             normalization_mapping={
                 key: NormalizationMode.IDENTITY for key in ["VISUAL", "STATE", "ACTION"]
             },
@@ -36,9 +48,14 @@ class OfficialACT(nn.Module):
         )
         self.policy = ACTPolicy(config)
 
-    @staticmethod
-    def adapt(batch: dict) -> dict:
-        out = {"observation.state": batch["state"], "observation.images.top": batch["image"]}
+    def adapt(self, batch: dict) -> dict:
+        out = {"observation.state": batch["state"]}
+        out.update(
+            {
+                f"observation.images.{camera}": batch["image"][:, i]
+                for i, camera in enumerate(self.cameras)
+            }
+        )
         if "action" in batch:
             out.update(action=batch["action"], action_is_pad=~batch["valid"])
         return out

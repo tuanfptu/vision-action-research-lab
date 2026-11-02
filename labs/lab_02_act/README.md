@@ -1,81 +1,95 @@
-# LAB 02 — ACT: Action Chunking with Transformers
+# LAB 02 — OpenArm ACT
 
-## 1. Mục tiêu học tập
+## 1. Mục tiêu
 
-Hiểu CVAE posterior, KL regularization, reparameterization, chunk và temporal ensemble; trace official implementation.
+Hiểu CVAE, multi-camera conditioning và official ACT adapter.
 
-## 2. Kiến thức và môi trường cần có
+## 2. Prerequisites
 
-Lab 01; attention, Transformer và Gaussian distributions.
+Python/PyTorch, supervised learning và các lab trước. Dùng `.venv-gpu`, clear ROS PYTHONPATH
+trong shell dự án. Dataset không cần ROS. Không đọc hoặc tái sử dụng previous robotics projects.
 
 ## 3. Nền tảng toán học
 
-qφ(z|a1:K,s,I)=N(μ,diag(exp(logvar))); z=μ+exp(0.5 logvar)⊙ε. KL(q||N(0,I))=−0.5 Σ(1+logvar−μ²−exp(logvar)). L=Lmasked-MSE+βKL trong bản giáo dục; official ACT sử dụng reconstruction recipe riêng, thường L1. Inference dùng prior mean z=0, tuyệt đối không đưa target action vào posterior. Chunk K dự đoán tương lai, execution horizon h≤K quyết định khi nào lấy ảnh mới.
+qφ(z|a,I,s)=N(μ,diag(exp(logvar))); z=μ+exp(logvar/2)ε. KL=−½Σ(1+logvar−μ²−exp(logvar)). Educational L=MSEmasked+βKL; inference z=0. Official ACT giữ objective gốc.
 
-## 4. Kiến trúc và computational flow
+## 4. Architecture và computational flow
 
-CNN+state → context token. Posterior Transformer đọc CLS+action tokens cùng positional embedding và padding mask → μ/logvar. Decoder đọc K learned queries với memory [context,z]. Đây là educational reduction; official ACT có spatial image tokens và encoder/decoder lớn hơn. Temporal ensemble tổng hợp các dự đoán cùng timestep từ các chunk chồng lấn.
+Posterior Transformer đọc CLS+action tokens, decoder dùng chunk queries. Educational CNN fusion được rút gọn; official adapter đưa mỗi view thành feature key riêng.
 
 ## 5. Tensor shapes
 
-Posterior tokens [B,K+1,D], key padding [B,K+1]; μ,logvar,z [B,L]. Memory [B,2,D]. Query [B,K,D] → decoder [B,K,D] → Linear [B,K,2]. KL scalar; reconstruction scalar. Decoder inference không cần action tensor.
+N frame, V camera được chọn, B batch, K action chunk, H history, D feature width.
+Cache image [N,V,3,R,R]; batch image [B,V,3,R,R], state [B,16]. CNN xử lý [B×V,3,R,R]
+→ [B,V,D]; concatenate [B,V×D+16] → context [B,D]. Action target/prediction [B,K,16],
+mask [B,K]. ACT posterior [B,K+1,D], μ/logvar/z [B,L], queries [B,K,D]. Generative input
+[B,K×16+D+3]. Video history [B,H,V,3,R,R], future [B,K,V,3,16,16]. Mọi dimension state/action
+được suy từ validated cache và lưu config; không hardcode 2D hoặc tùy ý reorder joints.
 
-## 6. Biểu diễn dữ liệu
+## 6. Dataset representation và semantics
 
-Mỗi file NPZ chứa `image [N,3,32,32]` float trong [0,1], `state [N,2]`,
-`action [N,2]`, `episode [N]`. Synthetic dùng tọa độ [0,1]; PushT dùng pixel coordinate
-cho cả state và absolute target. Không truyền normalized action trực tiếp vào simulator.
-Window có `valid [B,K]`; cuối episode lặp lại frame/action chỉ để padding và dùng mask.
-Normalization chỉ fit trên train episodes. Chia frame ngẫu nhiên sẽ rò rỉ temporal context.
-Manifest ghi SHA256, source và Hub revision; checkpoint kiểm tra hash khi đánh giá.
+30 episodes / 5,405 frames / 30Hz, v2.1 immutable SHA
+c5f7d41a37f9d9456b74eff673870997545c2d25. Thứ tự: right joints1–7, right gripper,
+left joints1–7, left gripper. Absolute position radians; gripper là signed finger_joint1
+angle, không phải [0,1] opening ratio. Default views ceiling+wrist_right; all five views
+được hỗ trợ. [Contract chi tiết](../../docs/openarm_contract.md) là nguồn mapping duy nhất.
 
-## 7. Walkthrough mã nguồn
+## 7. Walkthrough implementation
 
-Đọc `src/va_lab/datasets/core.py` theo thứ tự generate → read_arrays → episode_split →
-statistics → Windows. Sau đó đọc model tương ứng trong `models/policies.py`,
-`training/engine.py`, và `simulation/benchmark.py`. Train dùng AdamW, zero_grad,
-loss.backward, clip_grad_norm, optimizer.step; JSONL ghi số thực, best.pt lưu model,
-config, split và normalization. Evaluation load đúng checkpoint, `eval()` và `no_grad()`.
-Không xem tensor random forward pass là bằng chứng policy có kỹ năng.
+Đọc datasets/public.py acquire → export_openarm, datasets/core.py read_arrays → episode_split
+→ statistics → Windows. Đọc models/policies.py hoặc models/official.py, sau đó training/engine.py.
+Training dùng zero_grad, loss.backward, accumulation, gradient clipping, optimizer.step;
+checkpoints ghi stats, split, camera order, schema và hash. Evaluation eval()+no_grad(), không
+posterior labels. Simulation resolve mapping bằng tên thay vì suy thứ tự qpos từ vector dataset.
 
-## 8. Lệnh training và inference
-
+## 8. Lệnh training / inference
 
 ```bash
-source .venv/bin/activate
+source .venv-gpu/bin/activate
 unset PYTHONPATH
-va-lab generate --output data/synthetic.npz
-va-lab inspect --data data/synthetic.npz
+export HF_HOME="$PWD/data/hf"
+export MUJOCO_GL=egl
+va-lab train --model act --output runs/lab02_act
+va-lab train --model official_act --output runs/lab02_official_act
 ```
 
-```bash
-va-lab train --data data/synthetic.npz --output runs/lab02_act --model act
-va-lab verify-lerobot
-va-lab train --data data/pusht.npz --output runs/pusht_act --model act
-va-lab rollout --checkpoint runs/pusht_act/best.pt --horizon 1 --ensemble
-```
+Download cache lần đầu theo README, bỏ qua nếu cache đã tồn tại. Output run directory phải mới.
 
-## 9. Hành vi kỳ vọng và cách đọc kết quả
+## 9. Expected behavior và evidence
 
-Test kiểm tra prior prediction không đổi khi sửa ground-truth actions trong batch. Official ACT API smoke không tải pretrained backbone. Short run không chứng minh success-rate paper.
+Shapes đúng và loss/gradient hữu hạn là kiểm tra software path; không phải bằng chứng học task.
+Chỉ báo số được ghi ở [validation](../../docs/validation.md). Report device, peak VRAM, episode
+split, raw per-joint RMSE và camera names. Test episodes chỉ truy cập bằng evaluate --split test
+sau model selection; các thí nghiệm trong migration mặc định giữ test chưa đánh giá.
 
-Không có giá trị performance kỳ vọng giả định. Đọc số đo đã chạy trong
-[validation](../../docs/validation.md); không so training loss giữa objective khác nhau.
+## 10. Bài tập
 
-## 10. Bài tập thực nghiệm
+So state-only/vision với cùng split; đổi một yếu tố mỗi lần. So một/two/five cameras, K=1/4/8,
+history=1/2/4, data budget=50/100% trong training pool. Plot từng joint và gripper, không chỉ
+scalar aggregate. Đo sampling steps/latency và ít nhất ba seed khi đủ budget. Với simulation,
+đối chiếu named limits, actual commands, tracking error, deadline misses và cube lift criterion.
 
-In shape tại posterior và decoder; tự suy KL một chiều. So β=0 với β>0; plot latent variance. Giữ K cố định và thay h. So ensemble và không ensemble ở h=1.
+## 11. Failure analysis và giới hạn
 
-## 11. Failure analysis
+K là prediction chunk; h là execution horizon. Không đưa action labels vào posterior khi inference. Không gọi reduced config là full ACT reproduction.
 
-Posterior collapse khi β quá lớn; train/inference gap nếu decoder quá phụ thuộc posterior. K lớn có thể gây stale actions. Padding không mask làm target cuối episode chi phối loss. Ensembling có thể làm mượt nhưng tăng độ trễ.
+Timestamps sai gây image/action misalignment; split theo frame gây leakage; double-normalization
+làm target sai đơn vị. Constant joint std cần clamp và raw-RMSE kiểm tra. MSE thấp chưa bảo đảm
+contact dynamics tốt. Không truyền normalized action trực tiếp vào actuator, không gọi
+controller tracking thành công là successful learned manipulation.
 
-## 12. Câu hỏi kiểm tra hiểu sâu
+## 12. Câu hỏi tự kiểm tra
 
-Tại sao posterior dùng action khi train không phải leakage nếu inference không dùng? K và execution horizon khác nhau thế nào? Temporal ensemble ghép theo thời gian thực hay vị trí trong chunk?
+Vì sao right gripper có giá trị âm mà không phải torque? Vì sao dataset action order khác
+MJCF qpos order? Tại sao val/test không được fit normalization? Camera order đổi ảnh hưởng
+fusion thế nào? K khác execution horizon ra sao? Điều gì đủ để chứng minh dataset/simulator
+tương thích, và điều gì mới chỉ xác nhận offline regression?
 
 ## 13. Tài liệu chính thức
 
-ACT paper 2304.13705; official ACT and LeRobot v0.3.3 source. Các URL, version và ghi chú license ở [references](../../docs/references.md).
-Đọc [limitations](../../docs/limitations.md) trước khi diễn giải một smoke experiment thành
-kết quả nghiên cứu. Các claim của công trình gốc không phải kết quả của repository này.
+[Dataset OpenArm](https://huggingface.co/datasets/enactic/openarm-2-cell-pick_up_cube_mujoco-lerobot),
+[OpenArm MuJoCo](https://github.com/enactic/openarm_mujoco),
+[OpenArm Dataset](https://github.com/enactic/openarm_dataset),
+[LeRobot v0.3.3](https://github.com/huggingface/lerobot/tree/v0.3.3).
+Paper/implementation ACT, Diffusion/Flow, APT, LingBot và Helix được ghi ở
+[references](../../docs/references.md), cùng license và ghi chú educational scope.

@@ -1,0 +1,167 @@
+{
+  "status": "TESTED",
+  "mapping": [
+    {
+      "dataset_index": 0,
+      "feature": "right_joint1.pos",
+      "mjcf_joint": "openarm_right_joint1",
+      "qpos_index": 10,
+      "actuator_index": 9,
+      "actuator_name": "right_joint1_ctrl",
+      "lower_rad": -1.39626,
+      "upper_rad": 3.49066
+    },
+    {
+      "dataset_index": 1,
+      "feature": "right_joint2.pos",
+      "mjcf_joint": "openarm_right_joint2",
+      "qpos_index": 11,
+      "actuator_index": 10,
+      "actuator_name": "right_joint2_ctrl",
+      "lower_rad": -0.17453,
+      "upper_rad": 3.3161
+    },
+    {
+      "dataset_index": 2,
+      "feature": "right_joint3.pos",
+      "mjcf_joint": "openarm_right_joint3",
+      "qpos_index": 12,
+      "actuator_index": 11,
+      "actuator_name": "right_joint3_ctrl",
+      "lower_rad": -1.5708,
+      "upper_rad": 1.5708
+    },
+    {
+      "dataset_index": 3,
+      "feature": "right_joint4.pos",
+      "mjcf_joint": "openarm_right_joint4",
+      "qpos_index": 13,
+      "actuator_index": 12,
+      "actuator_name": "right_joint4_ctrl",
+      "lower_rad": 0.0,
+      "upper_rad": 2.44346
+    },
+    {
+      "dataset_index": 4,
+      "feature": "right_joint5.pos",
+      "mjcf_joint": "openarm_right_joint5",
+      "qpos_index": 14,
+      "actuator_index": 13,
+      "actuator_name": "right_joint5_ctrl",
+      "lower_rad": -1.5708,
+      "upper_rad": 1.5708
+    },
+    {
+      "dataset_index": 5,
+      "feature": "right_joint6.pos",
+      "mjcf_joint": "openarm_right_joint6",
+      "qpos_index": 15,
+      "actuator_index": 14,
+      "actuator_name": "right_joint6_ctrl",
+      "lower_rad": -0.785398,
+      "upper_rad": 0.785398
+    },
+    {
+      "dataset_index": 6,
+      "feature": "right_joint7.pos",
+      "mjcf_joint": "openarm_right_joint7",
+      "qpos_index": 16,
+      "actuator_index": 15,
+      "actuator_name": "right_joint7_ctrl",
+      "lower_rad": -1.5708,
+      "upper_rad": 1.5708
+    },
+    {
+      "dataset_index": 7,
+      "feature": "right_gripper.pos",
+      "mjcf_joint": "openarm_right_finger_joint1",
+      "qpos_index": 17,
+      "actuator_index": 16,
+      "actuator_name": "right_finger1_ctrl",
+      "lower_rad": -0.7854,
+      "upper_rad": 0.0
+    },
+    {
+      "dataset_index": 8,
+      "feature": "left_joint1.pos",
+      "mjcf_joint": "openarm_left_joint1",
+      "qpos_index": 1,
+      "actuator_index": 1,
+      "actuator_name": "left_joint1_ctrl",
+      "lower_rad": -3.49066,
+      "upper_rad": 1.39626
+    },
+    {
+      "dataset_index": 9,
+      "feature": "left_joint2.pos",
+      "mjcf_joint": "openarm_left_joint2",
+      "qpos_index": 2,
+      "actuator_index": 2,
+      "actuator_name": "left_joint2_ctrl",
+      "lower_rad": -3.3161,
+      "upper_rad": 0.17453
+    },
+    {
+      "dataset_index": 10,
+      "feature": "left_joint3.pos",
+      "mjcf_joint": "openarm_left_joint3",
+      "qpos_index": 3,
+      "actuator_index": 3,
+      "actuator_name": "left_joint3_ctrl",
+      "lower_rad": -1.5708,
+      "upper_rad": 1.5708
+    },
+    {
+      "dataset_index": 11,
+      "feature": "left_joint4.pos",
+      "mjcf_joint": "openarm_left_joint4",
+      "qpos_index": 4,
+      "actuator_index": 4,
+      "actuator_name": "left_joint4_ctrl",
+      "lower_rad": 0.0,
+      "upper_rad": 2.44346
+    },
+    {
+      "dataset_index": 12,
+      "feature": "left_joint5.pos",
+      "mjcf_joint": "openarm_left_joint5",
+      "qpos_index": 5,
+      "actuator_index": 5,
+      "actuator_name": "left_joint5_ctrl",
+      "lower_rad": -1.5708,
+      "upper_rad": 1.5708
+    },
+    {
+      "dataset_index": 13,
+      "feature": "left_joint6.pos",
+      "mjcf_joint": "openarm_left_joint6",
+      "qpos_index": 6,
+      "actuator_index": 6,
+      "actuator_name": "left_joint6_ctrl",
+      "lower_rad": -0.785398,
+      "upper_rad": 0.785398
+    },
+    {
+      "dataset_index": 14,
+      "feature": "left_joint7.pos",
+      "mjcf_joint": "openarm_left_joint7",
+      "qpos_index": 7,
+      "actuator_index": 7,
+      "actuator_name": "left_joint7_ctrl",
+      "lower_rad": -1.5708,
+      "upper_rad": 1.5708
+    },
+    {
+      "dataset_index": 15,
+      "feature": "left_gripper.pos",
+      "mjcf_joint": "openarm_left_finger_joint1",
+      "qpos_index": 8,
+      "actuator_index": 8,
+      "actuator_name": "left_finger1_ctrl",
+      "lower_rad": 0.0,
+      "upper_rad": 0.7854
+    }
+  ],
+  "units": "radians",
+  "semantics": "absolute position targets"
+}

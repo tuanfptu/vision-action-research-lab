@@ -1,0 +1,11 @@
+repo_id: enactic/openarm-2-cell-pick_up_cube_mujoco-lerobot
+revision: c5f7d41a37f9d9456b74eff673870997545c2d25
+codebase_version: v2.1
+fps: 30
+state_dim: 16
+action_dim: 16
+cameras: [ceiling, wrist_right]
+available_cameras: [ceiling, head_left, head_right, wrist_left, wrist_right]
+image_size: 32
+action_schema: absolute_joint_position_radians
+split_unit: episode

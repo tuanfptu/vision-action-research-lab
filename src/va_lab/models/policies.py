@@ -16,9 +16,9 @@ def masked_mse(pred: torch.Tensor, target: torch.Tensor, valid: torch.Tensor) ->
 
 
 class Encoder(nn.Module):
-    def __init__(self, dim: int = 64, vision: bool = True):
+    def __init__(self, dim: int = 64, vision: bool = True, state_dim: int = 16, cameras: int = 2):
         super().__init__()
-        self.vision = vision
+        self.vision, self.cameras = vision, cameras
         self.cnn = nn.Sequential(
             nn.Conv2d(3, 16, 3, 2, 1),
             nn.ReLU(),
@@ -29,22 +29,47 @@ class Encoder(nn.Module):
             nn.Linear(512, dim),
             nn.ReLU(),
         )
-        self.fuse = nn.Linear(dim + 2 if vision else 2, dim)
+        self.fuse = nn.Linear(dim * cameras + state_dim if vision else state_dim, dim)
 
     def forward(self, image: torch.Tensor, state: torch.Tensor) -> torch.Tensor:
-        x = torch.cat([self.cnn(image), state], -1) if self.vision else state
+        if image.ndim != 5 or image.shape[1] != self.cameras:
+            raise ValueError("Expected [B,V,3,H,W] in configured camera order")
+        b, v, c, h, w = image.shape
+        features = (
+            self.cnn(image.reshape(b * v, c, h, w)).reshape(b, v, -1).flatten(1)
+            if self.vision
+            else None
+        )
+        x = torch.cat([features, state], -1) if self.vision else state
         return F.relu(self.fuse(x))
 
 
 class BC(nn.Module):
-    def __init__(self, chunk: int, dim: int = 64, vision: bool = True):
+    def __init__(
+        self,
+        chunk: int,
+        dim: int = 64,
+        vision: bool = True,
+        state_dim: int = 16,
+        action_dim: int = 16,
+        cameras: int = 2,
+    ):
         super().__init__()
-        self.chunk = chunk
-        self.encoder = Encoder(dim, vision)
-        self.head = nn.Sequential(nn.Linear(dim, dim), nn.ReLU(), nn.Linear(dim, chunk * 2))
+        self.chunk, self.action_dim, self.state_dim, self.cameras = (
+            chunk,
+            action_dim,
+            state_dim,
+            cameras,
+        )
+        self.encoder = Encoder(dim, vision, state_dim, cameras)
+        self.head = nn.Sequential(
+            nn.Linear(dim, dim), nn.ReLU(), nn.Linear(dim, chunk * action_dim)
+        )
 
     def forward(self, batch: dict) -> torch.Tensor:
-        return self.head(self.encoder(batch["image"], batch["state"])).view(-1, self.chunk, 2)
+        return self.head(self.encoder(batch["image"], batch["state"])).view(
+            -1, self.chunk, self.action_dim
+        )
 
     def loss(self, batch: dict) -> torch.Tensor:
         return masked_mse(self(batch), batch["action"], batch["valid"])
@@ -54,11 +79,20 @@ class BC(nn.Module):
 
 
 class ACT(nn.Module):
-    def __init__(self, chunk: int, dim: int = 64, latent: int = 8, beta: float = 0.01):
+    def __init__(
+        self,
+        chunk: int,
+        dim: int = 64,
+        latent: int = 8,
+        beta: float = 0.01,
+        state_dim: int = 16,
+        action_dim: int = 16,
+        cameras: int = 2,
+    ):
         super().__init__()
-        self.chunk, self.latent, self.beta = chunk, latent, beta
-        self.encoder = Encoder(dim)
-        self.action_in = nn.Linear(2, dim)
+        self.chunk, self.latent, self.beta, self.action_dim = chunk, latent, beta, action_dim
+        self.encoder = Encoder(dim, state_dim=state_dim, cameras=cameras)
+        self.action_in = nn.Linear(action_dim, dim)
         self.cls = nn.Parameter(torch.zeros(1, 1, dim))
         self.pos = nn.Parameter(torch.randn(1, chunk + 1, dim) * 0.02)
         self.posterior = nn.TransformerEncoder(
@@ -70,7 +104,7 @@ class ACT(nn.Module):
         self.decoder = nn.TransformerDecoder(
             nn.TransformerDecoderLayer(dim, 4, dim * 2, batch_first=True, dropout=0), 1
         )
-        self.output = nn.Linear(dim, 2)
+        self.output = nn.Linear(dim, action_dim)
 
     def forward(self, batch: dict, posterior: bool = False) -> tuple:
         context = self.encoder(batch["image"], batch["state"])
@@ -104,16 +138,24 @@ class ACT(nn.Module):
 
 
 class Generative(nn.Module):
-    def __init__(self, chunk: int, dim: int = 64, flow: bool = False):
+    def __init__(
+        self,
+        chunk: int,
+        dim: int = 64,
+        flow: bool = False,
+        state_dim: int = 16,
+        action_dim: int = 16,
+        cameras: int = 2,
+    ):
         super().__init__()
-        self.chunk, self.flow = chunk, flow
-        self.encoder = Encoder(dim)
+        self.chunk, self.flow, self.action_dim = chunk, flow, action_dim
+        self.encoder = Encoder(dim, state_dim=state_dim, cameras=cameras)
         self.net = nn.Sequential(
-            nn.Linear(chunk * 2 + dim + 3, dim * 2),
+            nn.Linear(chunk * action_dim + dim + 3, dim * 2),
             nn.SiLU(),
             nn.Linear(dim * 2, dim * 2),
             nn.SiLU(),
-            nn.Linear(dim * 2, chunk * 2),
+            nn.Linear(dim * 2, chunk * action_dim),
         )
         self.register_buffer("betas", torch.linspace(0.0001, 0.02, 1000))
         self.register_buffer("alpha_bar", (1 - self.betas).cumprod(0))
@@ -141,7 +183,7 @@ class Generative(nn.Module):
         if steps < 1 or steps > 1000:
             raise ValueError("Sampling steps must be in [1,1000]")
         context = self.encoder(batch["image"], batch["state"])
-        x = context.new_empty(len(context), self.chunk, 2).normal_()
+        x = context.new_empty(len(context), self.chunk, self.action_dim).normal_()
         if self.flow:
             for k in range(steps):
                 t = context.new_full((len(x),), k / steps)
@@ -158,33 +200,37 @@ class Generative(nn.Module):
 
 
 class VideoAction(BC):
-    def __init__(self, chunk: int, dim: int = 64):
-        super().__init__(chunk, dim)
-        self.frames = nn.Linear(dim, chunk * 3 * 16 * 16)
+    def __init__(
+        self, chunk: int, dim: int = 64, state_dim: int = 16, action_dim: int = 16, cameras: int = 2
+    ):
+        super().__init__(chunk, dim, state_dim=state_dim, action_dim=action_dim, cameras=cameras)
+        self.frames = nn.Linear(dim, chunk * cameras * 3 * 16 * 16)
         self.temporal = nn.GRU(dim, dim, batch_first=True)
 
     def encode_history(self, batch: dict) -> torch.Tensor:
         past = batch.get("past", batch["image"][:, None])
-        b, t, c, h, w = past.shape
-        states = batch["state"][:, None].expand(-1, t, -1).reshape(b * t, 2)
-        embedding = self.encoder(past.reshape(b * t, c, h, w), states).view(b, t, -1)
+        b, t, v, c, h, w = past.shape
+        states = batch["state"][:, None].expand(-1, t, -1).reshape(b * t, self.state_dim)
+        embedding = self.encoder(past.reshape(b * t, v, c, h, w), states).view(b, t, -1)
         _, hidden = self.temporal(embedding)
         return hidden[0]
 
     def forward(self, batch: dict) -> torch.Tensor:
-        return self.head(self.encode_history(batch)).view(-1, self.chunk, 2)
+        return self.head(self.encode_history(batch)).view(-1, self.chunk, self.action_dim)
 
     def forward_video(self, batch: dict) -> tuple:
         h = self.encode_history(batch)
         return (
-            self.head(h).view(-1, self.chunk, 2),
-            self.frames(h).sigmoid().view(-1, self.chunk, 3, 16, 16),
+            self.head(h).view(-1, self.chunk, self.action_dim),
+            self.frames(h).sigmoid().view(-1, self.chunk, self.cameras, 3, 16, 16),
         )
 
     def loss(self, batch: dict) -> torch.Tensor:
         action, frames = self.forward_video(batch)
-        b, k, c, h, w = batch["future"].shape
-        target = F.interpolate(batch["future"].reshape(b * k, c, h, w), (16, 16)).view_as(frames)
+        b, k, v, c, h, w = batch["future"].shape
+        target = F.interpolate(batch["future"].reshape(b * k * v, c, h, w), (16, 16)).view_as(
+            frames
+        )
         return masked_mse(action, batch["action"], batch["valid"]) + masked_mse(
             frames, target, batch["future_valid"]
         )
@@ -192,16 +238,19 @@ class VideoAction(BC):
 
 def build(cfg: dict) -> nn.Module:
     name, chunk, dim = cfg["model"], cfg["chunk"], cfg.get("dim", 64)
+    dims = dict(
+        state_dim=cfg["state_dim"], action_dim=cfg["action_dim"], cameras=len(cfg["cameras"])
+    )
     if name == "official_act":
         from va_lab.models.official import OfficialACT
 
         return OfficialACT(cfg)
     if name in ["bc", "state"]:
-        return BC(chunk, dim, name != "state")
+        return BC(chunk, dim, name != "state", **dims)
     if name == "act":
-        return ACT(chunk, dim, cfg.get("latent", 8), cfg.get("beta", 0.01))
+        return ACT(chunk, dim, cfg.get("latent", 8), cfg.get("beta", 0.01), **dims)
     if name in ["diffusion", "flow"]:
-        return Generative(chunk, dim, name == "flow")
+        return Generative(chunk, dim, name == "flow", **dims)
     if name == "video":
-        return VideoAction(chunk, dim)
+        return VideoAction(chunk, dim, **dims)
     raise ValueError(f"Unknown model: {name}")

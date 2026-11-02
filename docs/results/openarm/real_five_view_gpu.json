@@ -1,0 +1,17 @@
+{
+  "status": "TESTED",
+  "device": "cuda:0",
+  "image_shape": [
+    2,
+    5,
+    3,
+    32,
+    32
+  ],
+  "action_shape": [
+    2,
+    4,
+    16
+  ],
+  "finite_loss": true
+}

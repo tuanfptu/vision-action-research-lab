@@ -1,0 +1,38 @@
+{
+  "mjcf_cameras": {
+    "ceiling": {
+      "position": [
+        0.245,
+        0.0,
+        1.8
+      ],
+      "quaternion": [
+        0.7071067811865476,
+        0.0,
+        0.0,
+        -0.7071067811865475
+      ],
+      "fovy": 66.0
+    },
+    "wrist_right": {
+      "position": [
+        0.023,
+        -0.0182,
+        -0.10236
+      ],
+      "quaternion": [
+        0.7053829970773491,
+        0.04932583402712312,
+        0.2067371096807324,
+        -0.6762111778228469
+      ],
+      "fovy": 66.0
+    }
+  },
+  "exact_dataset_extrinsics": "NOT VERIFIED",
+  "render_resolution": [
+    32,
+    32
+  ],
+  "dataset_preprocessing": "native aspect ratios resized to square 32x32; projection may differ"
+}

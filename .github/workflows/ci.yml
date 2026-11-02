@@ -1,4 +1,4 @@
-name: CPU checks
+name: OpenArm CPU regression checks
 on: [push, pull_request]
 jobs:
   test:
@@ -11,5 +11,6 @@ jobs:
       - run: pip install torch==2.7.1 torchvision==0.22.1 --index-url https://download.pytorch.org/whl/cpu
       - run: pip install -e '.[dev]' mujoco==3.3.2
       - run: ruff check .
+      - run: ruff format --check .
       - run: pytest -q
       - run: va-lab doctor

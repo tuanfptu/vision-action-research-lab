@@ -1,7 +1,0 @@
-repo_id: lerobot/pusht_image
-resolution: [32, 32]
-state_dim: 2
-action_dim: 2
-fps: 10
-action_schema: absolute_agent_xy_pixels
-split_unit: episode

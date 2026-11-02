@@ -9,3 +9,7 @@ runs/
 *.pt
 *.npz
 .env
+
+assets/upstream/
+
+.venv-gpu/

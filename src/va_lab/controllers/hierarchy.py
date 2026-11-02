@@ -33,3 +33,18 @@ class BoundedController:
             return np.clip(position, self.lower, self.upper)
         delta = np.clip(target - position, -self.max_speed * dt, self.max_speed * dt)
         return np.clip(position + delta, self.lower, self.upper)
+
+
+@dataclass(frozen=True)
+class TaskGoal:
+    """Explicit single-task dispatch interface; no high-level learned reasoning claim."""
+
+    name: str = "pick_up_cube"
+    lift_height_m: float = 0.08
+    hold_ticks: int = 10
+
+    def __post_init__(self) -> None:
+        if self.name != "pick_up_cube":
+            raise ValueError("Only the OpenArm pick_up_cube task has a policy/data contract")
+        if self.lift_height_m <= 0 or self.hold_ticks < 1:
+            raise ValueError("Positive task success thresholds required")

@@ -1,0 +1,7 @@
+chunks: [1, 4]
+latents: [8]
+betas: [0.01]
+camera_sets: [[ceiling], [ceiling, wrist_right]]
+train_fractions: [0.5, 1.0]
+execution_horizons: [1, 2]
+temporal_ensemble: [false, true]

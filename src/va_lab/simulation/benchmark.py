@@ -1,217 +1,357 @@
-"""PushT closed-loop evaluation, independent MuJoCo reacher and recording."""
+"""Independent official OpenArm v2 Cell simulation; exact dataset scene NOT VERIFIED."""
 
 import time
+from pathlib import Path
 
 import numpy as np
 import torch
 
-from va_lab.controllers.hierarchy import BoundedController, TemporalEnsemble
+from va_lab.controllers.hierarchy import BoundedController, TaskGoal, TemporalEnsemble
+from va_lab.datasets.core import manifest
+from va_lab.datasets.public import CAMERAS, JOINT_NAMES
+from va_lab.simulation.assets import acquire_assets
 from va_lab.training.engine import load_checkpoint
 from va_lab.utils.runtime import seed_all, write_json
 
 
-def pusht_rollout(
+def resolve_mapping(model) -> dict:
+    import mujoco
+
+    qpos, ctrl, joints, names = [], [], [], []
+    for feature in JOINT_NAMES:
+        side, joint = feature.removesuffix(".pos").split("_", 1)
+        suffix = "finger_joint1" if joint == "gripper" else joint
+        name = f"openarm_{side}_{suffix}"
+        actuator = f"{side}_finger1_ctrl" if joint == "gripper" else f"{side}_{joint}_ctrl"
+        jid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, name)
+        aid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_ACTUATOR, actuator)
+        if jid < 0 or aid < 0 or int(model.actuator_trnid[aid, 0]) != jid:
+            raise ValueError(f"Unverified joint/actuator mapping: {feature}")
+        # Position servos must have nonzero position gain and negative position bias.
+        if model.actuator_gainprm[aid, 0] <= 0 or model.actuator_biasprm[aid, 1] >= 0:
+            raise ValueError(f"Actuator is not a position servo: {actuator}")
+        qpos.append(int(model.jnt_qposadr[jid]))
+        ctrl.append(aid)
+        joints.append(jid)
+        names.append(name)
+    lower = np.maximum(model.jnt_range[joints, 0], model.actuator_ctrlrange[ctrl, 0])
+    upper = np.minimum(model.jnt_range[joints, 1], model.actuator_ctrlrange[ctrl, 1])
+    if np.any(lower >= upper) or len(set(ctrl)) != 16:
+        raise ValueError("Invalid controller limits or duplicate actuator")
+    return {
+        "qpos": np.array(qpos),
+        "ctrl": np.array(ctrl),
+        "joint_ids": np.array(joints),
+        "joint_names": names,
+        "lower": lower,
+        "upper": upper,
+    }
+
+
+class OpenArmEnv:
+    """30-Hz target interface over 1-kHz physics. No implicit scene-equivalence claim."""
+
+    def __init__(
+        self,
+        asset_root: str = "assets/upstream",
+        cameras: list[str] | None = None,
+        image_size: int = 32,
+        render_images: bool = True,
+    ):
+        import mujoco
+
+        acquire_assets(asset_root)
+        self.goal = TaskGoal()
+        self.mj = mujoco
+        self.scene = Path(asset_root).resolve() / "openarm_mujoco/v2/cell/demo.xml"
+        self.model = mujoco.MjModel.from_xml_path(str(self.scene))
+        self.data = mujoco.MjData(self.model)
+        self.mapping = resolve_mapping(self.model)
+        self.cameras = cameras or ["ceiling", "wrist_right"]
+        if any(c not in CAMERAS for c in self.cameras):
+            raise ValueError("Unknown OpenArm camera")
+        self.size = image_size
+        self.renderer = None
+        self.render_images = render_images
+        self.dt = float(self.model.opt.timestep)
+        self.controller = BoundedController(
+            self.mapping["lower"], self.mapping["upper"], timeout=0.25, max_speed=1.0
+        )
+        self.target = np.zeros(16)
+        self.last_command_time = 0.0
+        self.success_ticks = 0
+        self.clipped_values = 0
+        self.invalid_commands = 0
+        self.cube = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_BODY, "orange_cube")
+        self.reset()
+
+    def reset(self, seed: int = 7, initial_state: np.ndarray | None = None) -> dict:
+        self.mj.mj_resetData(self.model, self.data)
+        home = self.mj.mj_name2id(self.model, self.mj.mjtObj.mjOBJ_KEY, "home")
+        if home >= 0:
+            self.mj.mj_resetDataKeyframe(self.model, self.data, home)
+        if initial_state is not None:
+            q = np.asarray(initial_state, float)
+            if q.shape != (16,) or not np.isfinite(q).all():
+                raise ValueError("Initial state must be finite ordered 16-vector")
+            q = np.clip(q, self.mapping["lower"], self.mapping["upper"])
+            self.data.qpos[self.mapping["qpos"]] = q
+            for side in ["right", "left"]:
+                j1 = self.model.joint(f"openarm_{side}_finger_joint1").qposadr[0]
+                j2 = self.model.joint(f"openarm_{side}_finger_joint2").qposadr[0]
+                self.data.qpos[j2] = self.data.qpos[j1]
+        # Independent reset protocol; original dataset object/reset distribution is unknown.
+        rng = np.random.default_rng(seed)
+        cube_joint = int(self.model.body_jntadr[self.cube])
+        cube_qpos = int(self.model.jnt_qposadr[cube_joint])
+        self.data.qpos[cube_qpos : cube_qpos + 2] += rng.uniform(-0.02, 0.02, 2)
+        # Hold every actuator, including lifter; policy never controls or slices the lifter.
+        for aid in range(self.model.nu):
+            jid = int(self.model.actuator_trnid[aid, 0])
+            self.data.ctrl[aid] = self.data.qpos[self.model.jnt_qposadr[jid]]
+        self.mj.mj_forward(self.model, self.data)
+        self.target = self.data.qpos[self.mapping["qpos"]].copy()
+        self.command = self.target.copy()
+        self.last_command_time = float(self.data.time)
+        self.success_ticks = 0
+        self.clipped_values = 0
+        self.invalid_commands = 0
+        self.next_observation_time = 0.0
+        self.baseline_cube_z = 1.025  # table top 1.005 + cube half-size .020
+        return self.get_observation()
+
+    def get_observation(self) -> dict:
+        out = {
+            "state": self.data.qpos[self.mapping["qpos"]].copy(),
+            "timestamp": float(self.data.time),
+        }
+        if self.render_images:
+            out["image"] = np.stack([self.render(c) for c in self.cameras])
+        return out
+
+    def render(self, camera: str = "ceiling") -> np.ndarray:
+        if camera not in self.cameras:
+            raise ValueError("Camera not selected")
+        if self.renderer is None:
+            self.renderer = self.mj.Renderer(self.model, height=self.size, width=self.size)
+        self.renderer.update_scene(self.data, camera=f"camera_{camera}")
+        return self.renderer.render().transpose(2, 0, 1).copy()
+
+    def step(self, action: np.ndarray | None) -> tuple[dict, dict]:
+        if action is not None:
+            a = np.asarray(action, float)
+            if a.shape != (16,):
+                raise ValueError("Expected every ordered joint target, shape (16,)")
+            if not np.isfinite(a).all():
+                self.invalid_commands += 1
+                self.target = self.data.qpos[self.mapping["qpos"]].copy()
+            else:
+                clipped = np.clip(a, self.mapping["lower"], self.mapping["upper"])
+                self.clipped_values += int(np.count_nonzero(clipped != a))
+                self.target = clipped
+            self.last_command_time = float(self.data.time)
+        # Fractional 1000/30 ratio: alternate 33/34 physics steps, rather than drifting at 30.3 Hz.
+        self.next_observation_time += 1 / 30
+        while self.data.time + 1e-10 < self.next_observation_time:
+            q = self.data.qpos[self.mapping["qpos"]].copy()
+            age = float(self.data.time) - self.last_command_time
+            if age > self.controller.timeout:
+                self.command = q.copy()
+            target = self.controller.step(self.command, self.target, age, self.dt)
+            self.command = target.copy()
+            self.data.ctrl[self.mapping["ctrl"]] = target
+            self.mj.mj_step(self.model, self.data)
+            if not np.isfinite(self.data.qpos).all():
+                raise FloatingPointError("Nonfinite simulation state")
+        lifted = (
+            float(self.data.xpos[self.cube, 2]) > self.baseline_cube_z + self.goal.lift_height_m
+        )
+        self.success_ticks = self.success_ticks + 1 if lifted else 0
+        state = self.data.qpos[self.mapping["qpos"]]
+        return self.get_observation(), {
+            "joint_tracking_rmse_rad": float(np.sqrt(np.mean((state - self.target) ** 2))),
+            "command_clipped_values": self.clipped_values,
+            "invalid_commands": self.invalid_commands,
+            "success": self.check_success(),
+            "cube_z_m": float(self.data.xpos[self.cube, 2]),
+        }
+
+    def check_success(self) -> bool:
+        """Project-specific cube lift >=8 cm for 10 consecutive observation ticks (~.33 s)."""
+        return self.success_ticks >= self.goal.hold_ticks
+
+    def close(self) -> None:
+        if self.renderer is not None:
+            self.renderer.close()
+            self.renderer = None
+
+
+def smoke(render: bool = False) -> dict:
+    env = OpenArmEnv(render_images=render)
+    try:
+        q = env.get_observation()["state"]
+        obs, info = env.step(q)
+        return {
+            "status": "TESTED",
+            "mujoco_version": env.mj.__version__,
+            "nq": env.model.nq,
+            "nu": env.model.nu,
+            "camera_count": env.model.ncam,
+            "action_shape": list(q.shape),
+            "finite": bool(np.isfinite(obs["state"]).all()),
+            "time": obs["timestamp"],
+            "joint_names": env.mapping["joint_names"],
+            "limits": [env.mapping["lower"].tolist(), env.mapping["upper"].tolist()],
+            "rendered_shape": list(obs["image"].shape) if render else None,
+            "exact_demonstration_scene": "NOT VERIFIED",
+            **info,
+        }
+    finally:
+        env.close()
+
+
+def rollout(
     checkpoint: str,
     output: str,
-    episodes: int = 3,
+    episodes: int = 1,
     horizon: int = 1,
     ensemble: bool = False,
-    max_steps: int = 300,
+    max_steps: int = 60,
+    allow_unverified_scene: bool = False,
+    policy_hz: int = 30,
 ) -> dict:
-    import gym_pusht  # noqa: F401
-    import gymnasium as gym
-    from PIL import Image
-
-    seed_all(10000)
-    model, ckpt = load_checkpoint(checkpoint)
-    if ckpt.get("provenance", {}).get("repo_id") != "lerobot/pusht_image":
-        raise ValueError("PushT rollout requires a checkpoint trained on public PushT coordinates")
+    if not allow_unverified_scene:
+        raise ValueError(
+            "Exact demonstration scene NOT VERIFIED; pass explicit --allow-unverified-scene for an independent OpenArm experiment"
+        )
+    seed_all(7)
+    ckpt = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    cfg = ckpt["config"]
+    device = cfg["device"]
+    model, ckpt = load_checkpoint(checkpoint, device)
+    if ckpt["provenance"].get("action_names") != JOINT_NAMES:
+        raise ValueError("Checkpoint has no verified OpenArm joint schema")
+    if horizon < 1 or horizon > cfg["chunk"] or (ensemble and horizon != 1):
+        raise ValueError("Invalid execution horizon/ensemble combination")
+    if policy_hz < 1 or 30 % policy_hz:
+        raise ValueError("Policy rate must divide 30-Hz observation rate")
+    if ensemble and policy_hz != 30:
+        raise ValueError("Ensembling requires a new prediction each observation tick")
     stats = ckpt["stats"]
-    if horizon < 1 or horizon > ckpt["config"]["chunk"]:
-        raise ValueError("Execution horizon must lie in [1, chunk]")
-    if ensemble and horizon != 1:
-        raise ValueError("Temporal ensembling requires horizon=1")
-    env = gym.make("gym_pusht/PushT-v0", obs_type="pixels_agent_pos", render_mode="rgb_array")
-    scores, successes, latencies, deltas = [], [], [], []
+    env = OpenArmEnv(cameras=cfg["cameras"], image_size=cfg["image_size"])
+    timings, tracking, successes = [], [], []
     try:
         for episode in range(episodes):
-            obs, _ = env.reset(seed=10000 + episode)
-            cache, cursor, prev = None, 0, None
+            obs = env.reset(10000 + episode)
+            history = []
+            cursor = 0
+            cache = None
+            success = False
             temporal = TemporalEnsemble()
-            score, success = 0.0, False
             for tick in range(max_steps):
-                if cursor == 0 or ensemble:
-                    image = (
-                        np.asarray(Image.fromarray(obs["pixels"]).resize((32, 32)), np.float32)
-                        / 255
-                    )
+                history.append(obs["image"])
+                history = history[-cfg.get("history", 2) :]
+                if tick % (30 // policy_hz) == 0 and (cursor == 0 or ensemble or cache is None):
+                    image = torch.tensor(obs["image"], device=device).float()[None] / 255
+                    past = [history[0]] * (cfg.get("history", 2) - len(history)) + history
                     batch = {
-                        "image": torch.tensor(image.transpose(2, 0, 1))[None],
+                        "image": image,
+                        "past": torch.tensor(np.stack(past), device=device).float()[None] / 255,
                         "state": (
-                            torch.tensor(obs["agent_pos"]).float()[None] - stats["state_mean"]
+                            torch.tensor(obs["state"], device=device).float()[None]
+                            - stats["state_mean"].to(device)
                         )
-                        / stats["state_std"],
+                        / stats["state_std"].to(device),
                     }
+                    if device.startswith("cuda"):
+                        torch.cuda.synchronize()
                     start = time.perf_counter()
                     with torch.no_grad():
                         cache = (
-                            model.sample(batch, ckpt["config"].get("sampling_steps", 10))[0]
-                            * stats["action_std"]
-                            + stats["action_mean"]
-                        ).numpy()
-                    latencies.append((time.perf_counter() - start) * 1000)
-                action = temporal.update(tick, cache) if ensemble else cache[cursor]
-                action = np.clip(action, env.action_space.low, env.action_space.high)
-                if prev is not None:
-                    deltas.append(float(np.square(action - prev).mean()))
-                prev = action.copy()
-                obs, reward, terminated, truncated, _ = env.step(action)
-                score = max(score, float(reward))
-                success = success or bool(terminated)
+                            (
+                                model.sample(batch, cfg.get("sampling_steps", 10))[0]
+                                * stats["action_std"].to(device)
+                                + stats["action_mean"].to(device)
+                            )
+                            .cpu()
+                            .numpy()
+                        )
+                    timings.append((time.perf_counter() - start) * 1000)
+                    cursor = 0
+                action = (
+                    temporal.update(tick, cache) if ensemble else cache[min(cursor, len(cache) - 1)]
+                )
+                obs, info = env.step(action)
                 cursor = (cursor + 1) % horizon
-                if terminated or truncated:
-                    break
-            scores.append(score)
+                tracking.append(info["joint_tracking_rmse_rad"])
+                success |= info["success"]
             successes.append(success)
+        result = {
+            "scope": "independent official OpenArm Cell scene; not dataset-equivalent benchmark",
+            "goal": "lift cube >=8cm for 10 consecutive ticks",
+            "success_rate": float(np.mean(successes)),
+            "episodes": episodes,
+            "max_steps": max_steps,
+            "policy_hz": policy_hz,
+            "controller_hz": 1000,
+            "joint_tracking_rmse_rad": float(np.mean(tracking)),
+            "policy_latency_ms": float(np.mean(timings)),
+            "policy_deadline_misses": sum(t > 1000 / policy_hz for t in timings),
+            "command_clipped_values": env.clipped_values,
+            "device": device,
+            "scene_compatibility": "NOT VERIFIED",
+            "reset_protocol": "official home, cube XY jitter +/-2cm, episode seeds 10000+index",
+            "execution_horizon": horizon,
+            "ensemble": ensemble,
+        }
+        write_json(output, result)
+        return result
     finally:
         env.close()
-    result = {
-        "success_rate": float(np.mean(successes)),
-        "max_reward_mean": float(np.mean(scores)),
-        "policy_latency_ms": float(np.mean(latencies)),
-        "action_delta_mse": float(np.mean(deltas)) if deltas else 0.0,
-        "episodes": episodes,
-        "seed_start": 10000,
-        "execution_horizon": horizon,
-        "temporal_ensemble": ensemble,
-        "max_steps": max_steps,
-    }
-    write_json(output, result)
-    return result
 
 
-XML = """<mujoco><option timestep="0.01"/><worldbody>
-<geom type="plane" size="1 1 .1"/><body pos="0 0 .06">
-<joint name="x" type="slide" axis="1 0 0" limited="true" range="0 1"/>
-<joint name="y" type="slide" axis="0 1 0" limited="true" range="0 1"/>
-<geom type="sphere" size=".04" mass="1" rgba="1 0 0 1"/>
-</body></worldbody></mujoco>"""
-
-
-def hierarchy(checkpoint: str, output: str, ticks: int = 200, policy_hz: int = 10) -> dict:
-    """System 2 chooses a goal; learned System 1 proposes targets; System 0 bounds tracking.
-
-    Original two-slide MJCF, not Panda or a physical robot. Software stepping is simulated time.
-    """
-    import mujoco
-
-    seed_all(10000)
-    model, ckpt = load_checkpoint(checkpoint)
-    stats = ckpt["stats"]
-    mj = mujoco.MjModel.from_xml_string(XML)
-    sim = mujoco.MjData(mj)
-    sim.qpos[:] = [0.2, 0.2]
-    controller = BoundedController(np.zeros(2), np.ones(2))
-    if policy_hz < 1 or 100 % policy_hz:
-        raise ValueError("policy_hz must divide controller rate 100")
-    stride = 100 // policy_hz
-    goal, target, last = np.array([0.8, 0.7]), sim.qpos.copy(), 0
-    yy, xx = np.mgrid[:32, :32]
-    latency, trajectory = [], []
-    for tick in range(ticks):
-        if tick % stride == 0:
-            frame = np.zeros((3, 32, 32), np.float32)
-            frame[0] = (xx - sim.qpos[0] * 31) ** 2 + (yy - sim.qpos[1] * 31) ** 2 < 8
-            frame[1] = (xx - goal[0] * 31) ** 2 + (yy - goal[1] * 31) ** 2 < 8
-            batch = {
-                "image": torch.tensor(frame)[None],
-                "state": (torch.tensor(sim.qpos).float()[None] - stats["state_mean"])
-                / stats["state_std"],
-            }
-            start = time.perf_counter()
-            with torch.no_grad():
-                target = (
-                    model.sample(batch)[0, 0] * stats["action_std"] + stats["action_mean"]
-                ).numpy()
-            latency.append((time.perf_counter() - start) * 1000)
-            last = tick
-        next_position = controller.step(sim.qpos.copy(), target, (tick - last) * 0.01, 0.01)
-        # Critically damped PD tracking rather than teleporting qpos.
-        sim.qfrc_applied[:] = 100 * (next_position - sim.qpos) - 20 * sim.qvel
-        mujoco.mj_step(mj, sim)
-        trajectory.append(sim.qpos.copy().tolist())
-    result = {
-        "policy_hz": policy_hz,
-        "controller_hz": 100,
-        "ticks": ticks,
-        "final_goal_distance": float(np.linalg.norm(sim.qpos - goal)),
-        "policy_latency_ms": float(np.mean(latency)),
-        "trajectory": trajectory,
-        "scope": "educational synthetic reacher; no Helix reproduction or stability guarantee",
-    }
-    write_json(output, result)
-    return result
-
-
-def smoke() -> dict:
-    import mujoco
-
-    model = mujoco.MjModel.from_xml_string(XML)
-    data = mujoco.MjData(model)
-    for _ in range(10):
-        mujoco.mj_step(model, data)
-    return {
-        "mujoco_version": mujoco.__version__,
-        "time": float(data.time),
-        "finite": bool(np.isfinite(data.qpos).all()),
-    }
-
-
-def record(output: str, episodes: int = 8, seed: int = 17) -> dict:
-    """Record actual MuJoCo PD demonstrations; analytic top-view observations of sim state.
-
-    No external robot asset, renderer, dataset or checkpoint is reused. These are reacher
-    demonstrations, never PushT demonstrations. Physics advances ten 100-Hz steps per sample.
-    """
-    from pathlib import Path
-
-    import mujoco
-
-    from va_lab.datasets.core import manifest, read_arrays
-
-    if episodes < 3:
-        raise ValueError("Record at least three episodes")
+def record(output: str, episodes: int = 6, seed: int = 17, length: int = 30) -> dict:
+    """Real OpenArm physics joint-excitation collection; NOT pick-up expert demonstrations."""
+    env = OpenArmEnv()
     rng = np.random.default_rng(seed)
-    mj = mujoco.MjModel.from_xml_string(XML)
-    yy, xx = np.mgrid[:32, :32]
-    frames = {key: [] for key in ["image", "state", "action", "episode"]}
-    for episode in range(episodes):
-        sim = mujoco.MjData(mj)
-        sim.qpos[:] = rng.uniform(0.15, 0.4, 2)  # reset only, not policy execution
-        goal = rng.uniform(0.6, 0.85, 2)
-        for _ in range(30):
-            image = np.zeros((3, 32, 32), np.float32)
-            image[0] = (xx - sim.qpos[0] * 31) ** 2 + (yy - sim.qpos[1] * 31) ** 2 < 8
-            image[1] = (xx - goal[0] * 31) ** 2 + (yy - goal[1] * 31) ** 2 < 8
-            target = np.clip(sim.qpos + 0.15 * (goal - sim.qpos), 0, 1)
-            frames["image"].append(image)
-            frames["state"].append(sim.qpos.copy().astype(np.float32))
-            frames["action"].append(target.astype(np.float32))
-            frames["episode"].append(episode)
-            for _ in range(10):
-                sim.qfrc_applied[:] = 100 * (target - sim.qpos) - 20 * sim.qvel
-                mujoco.mj_step(mj, sim)
-    path = Path(output)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    np.savez_compressed(path, **{k: np.asarray(v) for k, v in frames.items()})
-    read_arrays(str(path))
-    metadata = {
-        "source": "original MuJoCo two-slide reacher PD demonstrations",
-        "episodes": episodes,
-        "seed": seed,
-        "fps": 10,
-        "observation": "analytic top view of actual simulation state and goal",
-        "action_schema": "absolute position in [0,1]^2",
-    }
-    manifest(path, metadata)
-    return metadata
+    rows = {k: [] for k in ["image", "state", "action", "episode", "timestamp", "frame"]}
+    try:
+        for e in range(episodes):
+            obs = env.reset(seed + e)
+            home = obs["state"].copy()
+            phase = rng.uniform(0, 2 * np.pi, 16)
+            for k in range(length):
+                target = np.clip(
+                    home + 0.03 * np.sin(k / 15 + phase), env.mapping["lower"], env.mapping["upper"]
+                )
+                for key, value in [
+                    ("image", obs["image"]),
+                    ("state", obs["state"]),
+                    ("action", target),
+                    ("episode", e),
+                    ("timestamp", k / 30),
+                    ("frame", k),
+                ]:
+                    rows[key].append(value)
+                obs, _ = env.step(target)
+        p = Path(output)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        if p.exists():
+            raise FileExistsError("Refusing to overwrite collected dataset")
+        np.savez_compressed(p, **{k: np.asarray(v) for k, v in rows.items()})
+        metadata = {
+            "source": "independent OpenArm joint-excitation collection; no manipulation expertise",
+            "episodes": episodes,
+            "frames": episodes * length,
+            "fps": 30,
+            "seed": seed,
+            "cameras": env.cameras,
+            "action_names": JOINT_NAMES,
+            "state_names": JOINT_NAMES,
+            "action_schema": "absolute joint and finger_joint1 position, radians",
+            "scene_compatibility": "independent scene; exact demonstration environment NOT VERIFIED",
+        }
+        manifest(p, metadata)
+        return metadata
+    finally:
+        env.close()

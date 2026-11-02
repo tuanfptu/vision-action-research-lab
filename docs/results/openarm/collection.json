@@ -1,0 +1,49 @@
+{
+  "source": "independent OpenArm joint-excitation collection; no manipulation expertise",
+  "episodes": 6,
+  "frames": 180,
+  "fps": 30,
+  "seed": 17,
+  "cameras": [
+    "ceiling",
+    "wrist_right"
+  ],
+  "action_names": [
+    "right_joint1.pos",
+    "right_joint2.pos",
+    "right_joint3.pos",
+    "right_joint4.pos",
+    "right_joint5.pos",
+    "right_joint6.pos",
+    "right_joint7.pos",
+    "right_gripper.pos",
+    "left_joint1.pos",
+    "left_joint2.pos",
+    "left_joint3.pos",
+    "left_joint4.pos",
+    "left_joint5.pos",
+    "left_joint6.pos",
+    "left_joint7.pos",
+    "left_gripper.pos"
+  ],
+  "state_names": [
+    "right_joint1.pos",
+    "right_joint2.pos",
+    "right_joint3.pos",
+    "right_joint4.pos",
+    "right_joint5.pos",
+    "right_joint6.pos",
+    "right_joint7.pos",
+    "right_gripper.pos",
+    "left_joint1.pos",
+    "left_joint2.pos",
+    "left_joint3.pos",
+    "left_joint4.pos",
+    "left_joint5.pos",
+    "left_joint6.pos",
+    "left_joint7.pos",
+    "left_gripper.pos"
+  ],
+  "action_schema": "absolute joint and finger_joint1 position, radians",
+  "scene_compatibility": "independent scene; exact demonstration environment NOT VERIFIED"
+}

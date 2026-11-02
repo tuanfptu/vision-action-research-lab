@@ -1,3 +1,7 @@
+import json
+import os
+from pathlib import Path
+
 import numpy as np
 import pytest
 import torch
@@ -10,110 +14,172 @@ from va_lab.training.engine import evaluate_checkpoint, load_checkpoint, train
 from va_lab.utils.runtime import seed_all
 
 
-@pytest.fixture
-def dataset(tmp_path):
-    path = tmp_path / "toy.npz"
-    generate(str(path), episodes=5, length=6)
-    return path
-
-
-def config(model="bc"):
+def config(model="bc", device="cpu", state_dim=16, action_dim=16, cameras=None):
     return dict(
         model=model,
         chunk=4,
         dim=32,
         seed=7,
-        batch_size=8,
-        device="cpu",
+        batch_size=4,
+        device=device,
         epochs=1,
         lr=0.001,
         sampling_steps=3,
+        state_dim=state_dim,
+        action_dim=action_dim,
+        cameras=cameras or ["test_0", "test_1"],
+        image_size=32,
+        gradient_accumulation=3,
     )
 
 
+@pytest.fixture
+def dataset(tmp_path):
+    path = tmp_path / "test.npz"
+    generate(str(path), episodes=8, length=5)
+    return path
+
+
 @pytest.mark.parametrize("name", ["bc", "state", "act", "diffusion", "flow", "video"])
-def test_forward_backward_and_prior(name, dataset):
+@pytest.mark.parametrize("state_dim,action_dim,views", [(16, 16, 2), (9, 13, 1), (16, 16, 5)])
+def test_configurable_forward_backward(name, state_dim, action_dim, views):
     seed_all(7)
-    a = read_arrays(str(dataset))
-    tr, va = episode_split(a["episode"])
-    batch = next(iter(DataLoader(Windows(a, tr, 4, statistics(a, tr)), batch_size=3)))
-    model = build(config(name))
+    cfg = config(
+        name, state_dim=state_dim, action_dim=action_dim, cameras=[f"v{i}" for i in range(views)]
+    )
+    batch = {
+        "image": torch.rand(2, views, 3, 32, 32),
+        "past": torch.rand(2, 2, views, 3, 32, 32),
+        "state": torch.rand(2, state_dim),
+        "action": torch.rand(2, 4, action_dim),
+        "valid": torch.ones(2, 4, dtype=torch.bool),
+        "future": torch.rand(2, 4, views, 3, 32, 32),
+        "future_valid": torch.ones(2, 4, dtype=torch.bool),
+    }
+    model = build(cfg)
     loss = model.loss(batch)
     assert torch.isfinite(loss)
     loss.backward()
     assert any(p.grad is not None and p.grad.abs().sum() > 0 for p in model.parameters())
     model.eval()
     with torch.no_grad():
-        sample = model.sample(batch, 3)
-    assert sample.shape == (3, 4, 2)
-    assert torch.isfinite(sample).all()
-    if name == "act":
-        before = sample.clone()
-        batch["action"] = torch.randn_like(batch["action"]) * 100
-        with torch.no_grad():
-            assert torch.allclose(before, model.sample(batch), atol=1e-6)
-    assert set(tr).isdisjoint(va)
+        pred = model.sample(batch, 3)
+        assert pred.shape == (2, 4, action_dim) and torch.isfinite(pred).all()
+        if name == "act":
+            batch["action"] += 100
+            assert torch.allclose(pred, model.sample(batch), atol=1e-6)
 
 
-def test_padding_and_stats(dataset):
+def test_split_padding_history_and_stats(dataset):
     a = read_arrays(str(dataset))
-    tr, _ = episode_split(a["episode"])
+    tr, va, te = episode_split(a["episode"])
+    assert not (set(tr) & set(va) or set(tr) & set(te) or set(va) & set(te))
     stats = statistics(a, tr)
     ds = Windows(a, tr, 4, stats)
-    for x in ds:
-        assert x["valid"][0]
+    before = stats["action_mean"].clone()
+    a["action"][~np.isin(a["episode"], tr)] += 1000
+    assert torch.equal(before, statistics(a, tr)["action_mean"])
+    for j, raw in enumerate(ds.indices):
+        x = ds[j]
         assert torch.all(x["valid"][1:].int() <= x["valid"][:-1].int())
-    mean = stats["action_mean"].clone()
-    val = ~np.isin(a["episode"], tr)
-    a["action"][val] += 1000
-    assert torch.equal(mean, statistics(a, tr)["action_mean"])
-    assert masked_mse(torch.ones(1, 2, 2), torch.zeros(1, 2, 2), torch.tensor([[1, 0]])) == 1
+        if raw == ds.starts[int(raw)]:
+            assert torch.equal(x["past"][0], x["image"])
+        if raw == ds.ends[int(raw)]:
+            assert int(x["valid"].sum()) == 1 and int(x["future_valid"].sum()) == 0
+    assert masked_mse(torch.ones(1, 2, 16), torch.zeros(1, 2, 16), torch.tensor([[1, 0]])) == 1
 
 
-def test_train_checkpoint_and_hash(dataset, tmp_path):
+def test_train_checkpoint_and_explicit_test(dataset, tmp_path):
     out = tmp_path / "run"
-    metrics = train(config(), str(dataset), str(out))
-    assert metrics["evaluated_action_scalars"] > 0
-    model, _ = load_checkpoint(str(out / "best.pt"))
-    assert not model.training
+    m = train(config(), str(dataset), str(out))
+    model, ckpt = load_checkpoint(str(out / "best.pt"))
+    assert not model.training and m["split"] == "validation"
+    assert len(m["joint_rmse_rad"]) == 16
+    assert set(ckpt["test_ids"]).isdisjoint(ckpt["val_ids"])
     again = evaluate_checkpoint(str(out / "best.pt"), str(dataset), str(tmp_path / "eval.json"))
-    assert again["normalized_action_mse"] == metrics["normalized_action_mse"]
-    generate(str(dataset), episodes=6)
+    assert again["normalized_action_mse"] == m["normalized_action_mse"]
+    test = evaluate_checkpoint(
+        str(out / "best.pt"), str(dataset), str(tmp_path / "test.json"), split="test"
+    )
+    assert test["split"] == "test"
+    generate(str(dataset), episodes=9)
     with pytest.raises(ValueError, match="hash"):
         evaluate_checkpoint(str(out / "best.pt"), str(dataset), str(tmp_path / "bad.json"))
 
 
-def test_watchdog_interpolation_and_ensemble():
-    c = BoundedController(np.zeros(2), np.ones(2))
-    position = np.array([0.5, 0.5])
-    assert np.allclose(c.step(position, np.ones(2) * 10, 0, 0.01), [0.52, 0.52])
-    assert np.allclose(c.step(position, np.ones(2), 1, 0.01), position)
-    assert np.allclose(c.step(position, np.array([np.nan, 0]), 0, 0.01), position)
-    e = TemporalEnsemble(0)
-    assert np.allclose(e.update(0, np.array([[0.0, 0.0], [2.0, 2.0]])), 0)
-    assert np.allclose(e.update(1, np.array([[4.0, 4.0], [8.0, 8.0]])), 3)
-
-
-def test_mujoco_smoke():
-    pytest.importorskip("mujoco")
-    from va_lab.simulation.benchmark import smoke
-
-    assert smoke()["finite"]
-
-
-def test_history_never_crosses_episode(dataset):
+def test_data_integrity_rejects_bad_order(dataset, tmp_path):
     a = read_arrays(str(dataset))
-    tr, _ = episode_split(a["episode"])
-    ds = Windows(a, tr, 4, statistics(a, tr))
-    for j, raw in enumerate(ds.indices):
-        if raw == 0 or a["episode"][raw] != a["episode"][raw - 1]:
-            assert torch.equal(ds[j]["past"][0], ds[j]["image"])
+    a["frame"][1] = 0
+    bad = tmp_path / "bad.npz"
+    np.savez_compressed(bad, **a)
+    with pytest.raises(ValueError, match="ordered"):
+        read_arrays(str(bad))
 
 
-def test_simulator_schema_rejects_synthetic(dataset, tmp_path):
-    from va_lab.simulation.benchmark import pusht_rollout
+def test_controller_and_ensemble():
+    c = BoundedController(-np.ones(16), np.ones(16))
+    q = np.zeros(16)
+    assert np.allclose(c.step(q, np.ones(16) * 10, 0, 0.01), 0.02)
+    assert np.allclose(c.step(q, np.ones(16), 1, 0.01), q)
+    e = TemporalEnsemble(0)
+    e.update(0, np.zeros((2, 16)))
+    assert np.allclose(e.update(1, np.ones((2, 16)) * 2), 1)
 
-    pytest.importorskip("gym_pusht")
-    train(config(), str(dataset), str(tmp_path / "run"))
-    with pytest.raises(ValueError, match="PushT"):
-        pusht_rollout(str(tmp_path / "run/best.pt"), str(tmp_path / "rollout.json"))
+
+@pytest.mark.skipif(
+    not Path("assets/upstream/openarm_mujoco/v2/cell/demo.xml").exists(),
+    reason="Run va-lab assets for official model integration",
+)
+def test_official_mujoco_joint_mapping():
+    pytest.importorskip("mujoco")
+    from va_lab.simulation.benchmark import OpenArmEnv, smoke
+
+    result = smoke()
+    assert result["finite"] and result["action_shape"] == [16] and result["nu"] == 17
+    env = OpenArmEnv(render_images=False)
+    try:
+        assert len(set(env.mapping["ctrl"])) == 16
+        obs, info = env.step(np.ones(16) * 1e6)
+        assert info["command_clipped_values"] == 16 and np.isfinite(obs["state"]).all()
+        assert np.all(env.data.ctrl[env.mapping["ctrl"]] <= env.mapping["upper"])
+        assert np.all(env.data.ctrl[env.mapping["ctrl"]] >= env.mapping["lower"])
+        with pytest.raises(ValueError, match="shape"):
+            env.step(np.zeros(15))
+    finally:
+        env.close()
+
+
+@pytest.mark.skipif(
+    os.environ.get("VA_LAB_INTEGRATION") != "1", reason="Explicit real dataset integration"
+)
+def test_real_official_openarm():
+    from va_lab.datasets.public import acquire
+
+    ds = acquire(episodes=1)
+    sample = ds[0]
+    assert sample["action"].shape == (16,) and sample["observation.state"].shape == (16,)
+    assert len([k for k in sample if k.startswith("observation.images.")]) == 5
+    a = read_arrays("data/openarm.npz")
+    assert len(a["state"]) == 5405 and len(np.unique(a["episode"])) == 30
+    meta = json.loads(Path("data/openarm.manifest.json").read_text())
+    tr, _, _ = episode_split(a["episode"])
+    b = next(iter(DataLoader(Windows(a, tr, 4, statistics(a, tr)), batch_size=2)))
+    assert b["image"].shape == (2, len(meta["cameras"]), 3, 32, 32)
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA device unavailable")
+@pytest.mark.parametrize("name", ["bc", "act", "diffusion", "flow", "video"])
+def test_gpu_forward_backward(name):
+    seed_all(7)
+    a = {
+        "image": torch.rand(2, 2, 3, 32, 32, device="cuda"),
+        "state": torch.rand(2, 16, device="cuda"),
+        "action": torch.rand(2, 4, 16, device="cuda"),
+        "valid": torch.ones(2, 4, dtype=torch.bool, device="cuda"),
+        "future": torch.rand(2, 4, 2, 3, 32, 32, device="cuda"),
+        "future_valid": torch.ones(2, 4, dtype=torch.bool, device="cuda"),
+    }
+    model = build(config(name, "cuda")).cuda()
+    loss = model.loss(a)
+    loss.backward()
+    assert torch.isfinite(loss) and next(model.parameters()).is_cuda

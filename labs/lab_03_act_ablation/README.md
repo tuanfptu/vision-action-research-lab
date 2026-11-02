@@ -1,79 +1,97 @@
-# LAB 03 — ACT Ablation Study
+# LAB 03 — OpenArm ACT Ablation
 
-## 1. Mục tiêu học tập
+## 1. Mục tiêu
 
-Thiết kế controlled comparison; đọc success, latency và smoothness mà không nhầm tương quan với nguyên nhân.
+Kiểm soát chunk, latent, camera sets, data budget và control horizon.
 
-## 2. Kiến thức và môi trường cần có
+## 2. Prerequisites
 
-Lab 02; experiment design, mean/variance và confidence intervals.
+Python/PyTorch, supervised learning và các lab trước. Dùng `.venv-gpu`, clear ROS PYTHONPATH
+trong shell dự án. Dataset không cần ROS. Không đọc hoặc tái sử dụng previous robotics projects.
 
 ## 3. Nền tảng toán học
 
-Một paired experiment giữ data split, optimizer, training budget và seed giống nhau; chỉ thay yếu tố cần đo. Success estimate p̂=Σsuccess/n có uncertainty lớn khi n nhỏ. Action smoothness ở đây mean squared first difference, chưa phải jerk hoặc chứng minh stability. Batch latency và policy-call latency là hai đại lượng khác nhau.
+Paired comparison giữ episode split/seed và validation/test cố định. Tỷ lệ train_fraction chỉ lấy subset training; fit lại stats trên subset đó. Báo confidence interval khi đủ seeds.
 
-## 4. Kiến trúc và computational flow
+## 4. Architecture và computational flow
 
-scripts/ablate.py dùng Cartesian grid chunk×latent×beta, train mỗi job và có thể rollout horizon×ensemble. scripts/report.py chỉ tổng hợp evaluation JSON thực. Có file config nhưng không coi mọi config trong repository là đã chạy.
+Cartesian grid → fresh run dirs → best validation checkpoint → optional independent-scene rollout với horizon/ensemble.
 
 ## 5. Tensor shapes
 
-K thay đổi action tensor [B,K,2], positional embedding [1,K+1,D], query [1,K,D]. L thay đổi μ/z [B,L]. h chỉ thay lịch execution, không đổi output shape. Ensemble buffer giữ các chunk còn dự đoán cho timestep hiện tại.
+N frame, V camera được chọn, B batch, K action chunk, H history, D feature width.
+Cache image [N,V,3,R,R]; batch image [B,V,3,R,R], state [B,16]. CNN xử lý [B×V,3,R,R]
+→ [B,V,D]; concatenate [B,V×D+16] → context [B,D]. Action target/prediction [B,K,16],
+mask [B,K]. ACT posterior [B,K+1,D], μ/logvar/z [B,L], queries [B,K,D]. Generative input
+[B,K×16+D+3]. Video history [B,H,V,3,R,R], future [B,K,V,3,16,16]. Mọi dimension state/action
+được suy từ validated cache và lưu config; không hardcode 2D hoặc tùy ý reorder joints.
 
-## 6. Biểu diễn dữ liệu
+## 6. Dataset representation và semantics
 
-Mỗi file NPZ chứa `image [N,3,32,32]` float trong [0,1], `state [N,2]`,
-`action [N,2]`, `episode [N]`. Synthetic dùng tọa độ [0,1]; PushT dùng pixel coordinate
-cho cả state và absolute target. Không truyền normalized action trực tiếp vào simulator.
-Window có `valid [B,K]`; cuối episode lặp lại frame/action chỉ để padding và dùng mask.
-Normalization chỉ fit trên train episodes. Chia frame ngẫu nhiên sẽ rò rỉ temporal context.
-Manifest ghi SHA256, source và Hub revision; checkpoint kiểm tra hash khi đánh giá.
+30 episodes / 5,405 frames / 30Hz, v2.1 immutable SHA
+c5f7d41a37f9d9456b74eff673870997545c2d25. Thứ tự: right joints1–7, right gripper,
+left joints1–7, left gripper. Absolute position radians; gripper là signed finger_joint1
+angle, không phải [0,1] opening ratio. Default views ceiling+wrist_right; all five views
+được hỗ trợ. [Contract chi tiết](../../docs/openarm_contract.md) là nguồn mapping duy nhất.
 
-## 7. Walkthrough mã nguồn
+## 7. Walkthrough implementation
 
-Đọc `src/va_lab/datasets/core.py` theo thứ tự generate → read_arrays → episode_split →
-statistics → Windows. Sau đó đọc model tương ứng trong `models/policies.py`,
-`training/engine.py`, và `simulation/benchmark.py`. Train dùng AdamW, zero_grad,
-loss.backward, clip_grad_norm, optimizer.step; JSONL ghi số thực, best.pt lưu model,
-config, split và normalization. Evaluation load đúng checkpoint, `eval()` và `no_grad()`.
-Không xem tensor random forward pass là bằng chứng policy có kỹ năng.
+Đọc datasets/public.py acquire → export_openarm, datasets/core.py read_arrays → episode_split
+→ statistics → Windows. Đọc models/policies.py hoặc models/official.py, sau đó training/engine.py.
+Training dùng zero_grad, loss.backward, accumulation, gradient clipping, optimizer.step;
+checkpoints ghi stats, split, camera order, schema và hash. Evaluation eval()+no_grad(), không
+posterior labels. Simulation resolve mapping bằng tên thay vì suy thứ tự qpos từ vector dataset.
 
-## 8. Lệnh training và inference
-
+## 8. Lệnh training / inference
 
 ```bash
-source .venv/bin/activate
+source .venv-gpu/bin/activate
 unset PYTHONPATH
-va-lab generate --output data/synthetic.npz
-va-lab inspect --data data/synthetic.npz
+export HF_HOME="$PWD/data/hf"
+export MUJOCO_GL=egl
+python scripts/ablate.py --output runs/lab03 --grid configs/models/act_smoke_ablation.yaml
 ```
 
-```bash
-python scripts/ablate.py --data data/pusht.npz --output runs/lab03 --rollouts
-python scripts/report.py runs/lab03 --output runs/lab03/report.md
-```
+Download cache lần đầu theo README, bỏ qua nếu cache đã tồn tại. Output run directory phải mới.
 
-## 9. Hành vi kỳ vọng và cách đọc kết quả
+## 9. Expected behavior và evidence
 
-Mỗi job có config, split, metrics, checkpoint, evaluation và rollout JSON riêng. PARTIAL: chưa tự động hóa image encoder/history/data-budget/unseen-state sweeps; chưa có multi-seed study đầy đủ.
+Shapes đúng và loss/gradient hữu hạn là kiểm tra software path; không phải bằng chứng học task.
+Chỉ báo số được ghi ở [validation](../../docs/validation.md). Report device, peak VRAM, episode
+split, raw per-joint RMSE và camera names. Test episodes chỉ truy cập bằng evaluate --split test
+sau model selection; các thí nghiệm trong migration mặc định giữ test chưa đánh giá.
 
-Không có giá trị performance kỳ vọng giả định. Đọc số đo đã chạy trong
-[validation](../../docs/validation.md); không so training loss giữa objective khác nhau.
+## 10. Bài tập
 
-## 10. Bài tập thực nghiệm
+So state-only/vision với cùng split; đổi một yếu tố mỗi lần. So một/two/five cameras, K=1/4/8,
+history=1/2/4, data budget=50/100% trong training pool. Plot từng joint và gripper, không chỉ
+scalar aggregate. Đo sampling steps/latency và ít nhất ba seed khi đủ budget. Với simulation,
+đối chiếu named limits, actual commands, tracking error, deadline misses và cube lift criterion.
 
-Bắt đầu grid nhỏ; sau đó ≥3 seeds, final untouched episodes và confidence interval. Đo batch-1 p50/p95 sau warmup. So data fractions 10/25/50/100% theo episode và giữ validation cố định.
+## 11. Failure analysis và giới hạn
 
-## 11. Failure analysis
+Camera count, K và data budget thay cả compute; cần báo thời gian/VRAM. Full multi-seed study vẫn PARTIAL.
 
-Sử dụng validation để chọn architecture rồi báo cùng tập đó là test dẫn đến optimistic bias. Thay K cũng thay compute và action targets; cần báo cả wall-clock budget. Test rollout quá ít tạo ranking ngẫu nhiên.
+Timestamps sai gây image/action misalignment; split theo frame gây leakage; double-normalization
+làm target sai đơn vị. Constant joint std cần clamp và raw-RMSE kiểm tra. MSE thấp chưa bảo đảm
+contact dynamics tốt. Không truyền normalized action trực tiếp vào actuator, không gọi
+controller tracking thành công là successful learned manipulation.
 
-## 12. Câu hỏi kiểm tra hiểu sâu
+## 12. Câu hỏi tự kiểm tra
 
-Tại sao phải dùng cùng episode split? Vì sao K lớn cần kiểm soát compute? Một success-rate 0/3 có chứng minh model vô dụng không?
+Vì sao right gripper có giá trị âm mà không phải torque? Vì sao dataset action order khác
+MJCF qpos order? Tại sao val/test không được fit normalization? Camera order đổi ảnh hưởng
+fusion thế nào? K khác execution horizon ra sao? Điều gì đủ để chứng minh dataset/simulator
+tương thích, và điều gì mới chỉ xác nhận offline regression?
 
 ## 13. Tài liệu chính thức
 
-ACT original paper and versioned implementation; benchmark protocol in project README. Các URL, version và ghi chú license ở [references](../../docs/references.md).
-Đọc [limitations](../../docs/limitations.md) trước khi diễn giải một smoke experiment thành
-kết quả nghiên cứu. Các claim của công trình gốc không phải kết quả của repository này.
+[Dataset OpenArm](https://huggingface.co/datasets/enactic/openarm-2-cell-pick_up_cube_mujoco-lerobot),
+[OpenArm MuJoCo](https://github.com/enactic/openarm_mujoco),
+[OpenArm Dataset](https://github.com/enactic/openarm_dataset),
+[LeRobot v0.3.3](https://github.com/huggingface/lerobot/tree/v0.3.3).
+Paper/implementation ACT, Diffusion/Flow, APT, LingBot và Helix được ghi ở
+[references](../../docs/references.md), cùng license và ghi chú educational scope.
+
+Khi đổi training-data budget, normalization statistics cũng đổi. Vì vậy normalized MSE giữa
+các budget không cùng thang đo; dùng raw per-joint RMSE (radians) để so sánh các budget.

@@ -1,0 +1,23 @@
+{
+  "model": "bc",
+  "seed": 7,
+  "split_seed": 7,
+  "device": "cuda",
+  "batch_size": 8,
+  "dim": 64,
+  "chunk": 4,
+  "latent": 8,
+  "beta": 0.01,
+  "lr": 0.001,
+  "epochs": 3,
+  "sampling_steps": 10,
+  "gradient_accumulation": 2,
+  "cameras": [
+    "ceiling",
+    "wrist_right"
+  ],
+  "image_size": 32,
+  "history": 2,
+  "state_dim": 16,
+  "action_dim": 16
+}

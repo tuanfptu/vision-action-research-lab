@@ -1,81 +1,95 @@
-# LAB 04 — Diffusion và Flow Matching
+# LAB 04 — OpenArm Diffusion / Flow
 
-## 1. Mục tiêu học tập
+## 1. Mục tiêu
 
-Hiểu conditional multimodal generation và sự khác nhau giữa noise prediction với velocity prediction.
+Sinh phân phối joint action chunks, đo inference steps và multimodality.
 
-## 2. Kiến thức và môi trường cần có
+## 2. Prerequisites
 
-Lab 01; Gaussian noise, stochastic processes và ODE cơ bản.
+Python/PyTorch, supervised learning và các lab trước. Dùng `.venv-gpu`, clear ROS PYTHONPATH
+trong shell dự án. Dataset không cần ROS. Không đọc hoặc tái sử dụng previous robotics projects.
 
 ## 3. Nền tảng toán học
 
-Diffusion: x_t=√ᾱ_t·a+√(1−ᾱ_t)·ε; L=E||εθ(x_t,t,c)−ε||² có padding mask. ᾱ là cumulative product của 1−β_t với 1000 bước training (sampling có thể ít hơn). DDIM suy x0 từ ε rồi chuyển sang ᾱ trước. Flow: x_t=(1−t)x_noise+t·a, velocity target v=a−x_noise; L=E||vθ−v||². Euler: x(t+Δ)=x(t)+Δvθ. Hai objective không có loss scale so sánh trực tiếp.
+Diffusion x_t=√ᾱ_t a+√(1−ᾱ_t)ε, học εθ; 1000 noise steps. DDIM có thể sample ít bước. Flow x_t=(1−t)ε+ta, v*=a−ε, Euler x←x+Δt·vθ. Cả hai condition trên ảnh và state.
 
-## 4. Kiến trúc và computational flow
+## 4. Architecture và computational flow
 
-Condition encoder giống BC. Flatten action chunk, concat condition và time features [t,sin πt,cos πt] → MLP → noise/velocity [B,K,2]. Inference khởi tạo noise và lặp sampling steps. Không dùng ground-truth actions ở inference.
+Flatten [B,K,16] concat feature+time → noise/velocity MLP → chunk. Không cắt chỉ một arm hoặc gripper.
 
 ## 5. Tensor shapes
 
-Noise/clean/x_t [B,K,2]; t [B], embedding [B,3]; condition [B,D]; MLP input [B,2K+D+3]; output [B,2K] reshape [B,K,2].
+N frame, V camera được chọn, B batch, K action chunk, H history, D feature width.
+Cache image [N,V,3,R,R]; batch image [B,V,3,R,R], state [B,16]. CNN xử lý [B×V,3,R,R]
+→ [B,V,D]; concatenate [B,V×D+16] → context [B,D]. Action target/prediction [B,K,16],
+mask [B,K]. ACT posterior [B,K+1,D], μ/logvar/z [B,L], queries [B,K,D]. Generative input
+[B,K×16+D+3]. Video history [B,H,V,3,R,R], future [B,K,V,3,16,16]. Mọi dimension state/action
+được suy từ validated cache và lưu config; không hardcode 2D hoặc tùy ý reorder joints.
 
-## 6. Biểu diễn dữ liệu
+## 6. Dataset representation và semantics
 
-Mỗi file NPZ chứa `image [N,3,32,32]` float trong [0,1], `state [N,2]`,
-`action [N,2]`, `episode [N]`. Synthetic dùng tọa độ [0,1]; PushT dùng pixel coordinate
-cho cả state và absolute target. Không truyền normalized action trực tiếp vào simulator.
-Window có `valid [B,K]`; cuối episode lặp lại frame/action chỉ để padding và dùng mask.
-Normalization chỉ fit trên train episodes. Chia frame ngẫu nhiên sẽ rò rỉ temporal context.
-Manifest ghi SHA256, source và Hub revision; checkpoint kiểm tra hash khi đánh giá.
+30 episodes / 5,405 frames / 30Hz, v2.1 immutable SHA
+c5f7d41a37f9d9456b74eff673870997545c2d25. Thứ tự: right joints1–7, right gripper,
+left joints1–7, left gripper. Absolute position radians; gripper là signed finger_joint1
+angle, không phải [0,1] opening ratio. Default views ceiling+wrist_right; all five views
+được hỗ trợ. [Contract chi tiết](../../docs/openarm_contract.md) là nguồn mapping duy nhất.
 
-## 7. Walkthrough mã nguồn
+## 7. Walkthrough implementation
 
-Đọc `src/va_lab/datasets/core.py` theo thứ tự generate → read_arrays → episode_split →
-statistics → Windows. Sau đó đọc model tương ứng trong `models/policies.py`,
-`training/engine.py`, và `simulation/benchmark.py`. Train dùng AdamW, zero_grad,
-loss.backward, clip_grad_norm, optimizer.step; JSONL ghi số thực, best.pt lưu model,
-config, split và normalization. Evaluation load đúng checkpoint, `eval()` và `no_grad()`.
-Không xem tensor random forward pass là bằng chứng policy có kỹ năng.
+Đọc datasets/public.py acquire → export_openarm, datasets/core.py read_arrays → episode_split
+→ statistics → Windows. Đọc models/policies.py hoặc models/official.py, sau đó training/engine.py.
+Training dùng zero_grad, loss.backward, accumulation, gradient clipping, optimizer.step;
+checkpoints ghi stats, split, camera order, schema và hash. Evaluation eval()+no_grad(), không
+posterior labels. Simulation resolve mapping bằng tên thay vì suy thứ tự qpos từ vector dataset.
 
-## 8. Lệnh training và inference
-
+## 8. Lệnh training / inference
 
 ```bash
-source .venv/bin/activate
+source .venv-gpu/bin/activate
 unset PYTHONPATH
-va-lab generate --output data/synthetic.npz
-va-lab inspect --data data/synthetic.npz
+export HF_HOME="$PWD/data/hf"
+export MUJOCO_GL=egl
+va-lab train --model diffusion --output runs/lab04_diffusion
+va-lab train --model flow --output runs/lab04_flow
 ```
 
-```bash
-va-lab train --data data/synthetic.npz --output runs/lab04_diffusion --model diffusion
-va-lab train --data data/synthetic.npz --output runs/lab04_flow --model flow
-va-lab train --data data/pusht.npz --output runs/pusht_flow --model flow
-va-lab rollout --checkpoint runs/pusht_flow/best.pt
-```
+Download cache lần đầu theo README, bỏ qua nếu cache đã tồn tại. Output run directory phải mới.
 
-## 9. Hành vi kỳ vọng và cách đọc kết quả
+## 9. Expected behavior và evidence
 
-Forward/backward và sampler tạo output hữu hạn. Đây là MLP nhỏ, không phải temporal U-Net của Diffusion Policy. Với ít epochs mode coverage chưa được chứng minh.
+Shapes đúng và loss/gradient hữu hạn là kiểm tra software path; không phải bằng chứng học task.
+Chỉ báo số được ghi ở [validation](../../docs/validation.md). Report device, peak VRAM, episode
+split, raw per-joint RMSE và camera names. Test episodes chỉ truy cập bằng evaluate --split test
+sau model selection; các thí nghiệm trong migration mặc định giữ test chưa đánh giá.
 
-Không có giá trị performance kỳ vọng giả định. Đọc số đo đã chạy trong
-[validation](../../docs/validation.md); không so training loss giữa objective khác nhau.
+## 10. Bài tập
 
-## 10. Bài tập thực nghiệm
+So state-only/vision với cùng split; đổi một yếu tố mỗi lần. So một/two/five cameras, K=1/4/8,
+history=1/2/4, data budget=50/100% trong training pool. Plot từng joint và gripper, không chỉ
+scalar aggregate. Đo sampling steps/latency và ít nhất ba seed khi đủ budget. Với simulation,
+đối chiếu named limits, actual commands, tracking error, deadline misses và cube lift criterion.
 
-Giữ observation cố định, sample ≥100 lần và plot endpoints để kiểm tra mode coverage. Thay sampling_steps 1/5/10/20/100; đo quality/latency. So BC, ACT và generators trên cùng dataset/split.
+## 11. Failure analysis và giới hạn
 
-## 11. Failure analysis
+Không so loss DDPM, flow, CVAE trực tiếp. Point MSE chưa đo mode coverage; đầu ra stochastic cần nhiều samples và seeds.
 
-MSE point prediction làm trung bình mode; generative model vẫn có thể mode collapse. Euler ít bước tạo discretization error. Noise schedule không đủ phá signal làm prior mismatch. Padded tokens cần xem xét nếu nghiên cứu horizon dài.
+Timestamps sai gây image/action misalignment; split theo frame gây leakage; double-normalization
+làm target sai đơn vị. Constant joint std cần clamp và raw-RMSE kiểm tra. MSE thấp chưa bảo đảm
+contact dynamics tốt. Không truyền normalized action trực tiếp vào actuator, không gọi
+controller tracking thành công là successful learned manipulation.
 
-## 12. Câu hỏi kiểm tra hiểu sâu
+## 12. Câu hỏi tự kiểm tra
 
-Tại sao noise prediction học distribution thay vì một action duy nhất? DDIM và DDPM khác nhau ở randomness như thế nào? Velocity field phụ thuộc time ra sao?
+Vì sao right gripper có giá trị âm mà không phải torque? Vì sao dataset action order khác
+MJCF qpos order? Tại sao val/test không được fit normalization? Camera order đổi ảnh hưởng
+fusion thế nào? K khác execution horizon ra sao? Điều gì đủ để chứng minh dataset/simulator
+tương thích, và điều gì mới chỉ xác nhận offline regression?
 
 ## 13. Tài liệu chính thức
 
-DDPM, DDIM, Flow Matching và Diffusion Policy papers trong docs/references.md. Các URL, version và ghi chú license ở [references](../../docs/references.md).
-Đọc [limitations](../../docs/limitations.md) trước khi diễn giải một smoke experiment thành
-kết quả nghiên cứu. Các claim của công trình gốc không phải kết quả của repository này.
+[Dataset OpenArm](https://huggingface.co/datasets/enactic/openarm-2-cell-pick_up_cube_mujoco-lerobot),
+[OpenArm MuJoCo](https://github.com/enactic/openarm_mujoco),
+[OpenArm Dataset](https://github.com/enactic/openarm_dataset),
+[LeRobot v0.3.3](https://github.com/huggingface/lerobot/tree/v0.3.3).
+Paper/implementation ACT, Diffusion/Flow, APT, LingBot và Helix được ghi ở
+[references](../../docs/references.md), cùng license và ghi chú educational scope.

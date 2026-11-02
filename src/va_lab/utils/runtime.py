@@ -21,7 +21,12 @@ def seed_all(seed: int) -> None:
 def load_config(path: str) -> dict:
     with open(path) as handle:
         cfg = yaml.safe_load(handle)
-    if cfg["chunk"] < 1 or cfg["batch_size"] < 1 or cfg["epochs"] < 1:
+    if (
+        cfg["chunk"] < 1
+        or cfg["batch_size"] < 1
+        or cfg["epochs"] < 1
+        or cfg.get("gradient_accumulation", 1) < 1
+    ):
         raise ValueError("chunk, batch_size and epochs must be positive")
     return cfg
 

@@ -1,32 +1,31 @@
-# Trạng thái, giới hạn và công việc còn lại
+# Migration scope and limitations
 
-Mã nguồn thực thi có cho cả tám lab. "Có implementation" không đồng nghĩa đã tái lập
-kết quả paper. Xem validation.md để biết lệnh và số liệu đã thực sự chạy.
+- IMPLEMENTED: official v2.1 acquisition, exact SHA, ordered 16-joint schema, five available
+  camera views, synchronized two-view export, train/validation/test episode split, train-only
+  statistics, generic state/action dimensions and multi-camera policies.
+- IMPLEMENTED: GPU-required train/evaluate, gradient accumulation, exact checkpoint reload,
+  per-joint raw RMSE, video PSNR, actual memory/runtime logging, controlled ablation scripts.
+- IMPLEMENTED: educational and official ACT, BC/state, diffusion/flow, multi-view video GRU.
+- IMPLEMENTED: named OpenArm joint/controller adapter, reset/step/observation/render/success,
+  interpolated setpoints, clipping, NaN rejection and simulated watchdog, independent Cell assets.
+- NOT VERIFIED: exact demonstration MJCF commit, cameras, gains, lifter pose, object reset
+  distribution and original success rule. Offline training compatibility does not certify
+  closed-loop reconstruction. Independent rollouts require explicit acknowledgment.
+- PARTIAL: Lab 03 full grid/multiple-seed confidence intervals and generalization study.
+- PARTIAL: Lab 05 uses disjoint episodes from one task. No evidence of cross-task transfer,
+  negative-transfer robustness or sample-efficiency benefit. The added simulation collector
+  produces joint-excitation data, not expert pick-up trajectories. Next: public teleoperation,
+  task diversity, success labeling, task-balanced sources and reserved final test tasks.
+- PARTIAL: Lab 06 is a small GRU + frame/action heads, not LingBot latent dual-stream diffusion,
+  autoregressive planning or a robot foundation world model.
+- PARTIAL: Lab 07 has an explicit single-task TaskGoal dispatch interface, not a trained high-level planner. It uses explicit position servos, not proprietary learned Helix System 0.
+  Watchdog uses simulated command age; latency misses are measured, but full real-time IPC
+  stalls, network failure and hardware safety are not certified.
+- Thirty episodes from one task are a small sample. Near-constant left gripper coordinates
+  make normalized MSE sensitive; inspect all 16 raw joint RMSEs. Training loss scales between
+  BC/CVAE/diffusion/flow are different; compare validation prediction and behavior separately.
+- No old local data/checkpoint is deleted. Schema-incompatible artifacts remain historical.
+  Unrelated repositories, drivers, global packages, ROS and system Python are untouched.
 
-- Lab 00: CPU được kiểm tra; CUDA trên máy hiện tại chưa hoạt động. Không sửa driver.
-- Lab 01: BC/state-only có data, train, checkpoint, offline và PushT closed-loop. Dataset
-  nhỏ và hai epoch chỉ kiểm tra pipeline; chưa có success-rate đáng tin cậy.
-- Lab 02: ACT giáo dục dùng CNN pooling, posterior Transformer và decoder, không có toàn
-  bộ visual token encoder của paper. Official ACT có adapter train/checkpoint/evaluate riêng với reduced config. Chưa tái lập
-  full-budget ACT hoặc ALOHA.
-- Lab 03 PARTIAL: chunk/latent/KL và rollout horizon/ensemble có script tự động. Chưa có
-  sweep encoder/history, dataset size, unseen-state perturbations và báo cáo thống kê nhiều
-  seed. Latency số nhỏ chịu ảnh hưởng warmup/CPU scheduling; cần p50/p95, batch 1.
-- Lab 04: genuine diffusion/flow objective và samplers; chưa xác nhận mode coverage,
-  calibration hoặc ưu thế so với ACT. Không so training loss giữa các objective.
-- Lab 05: four-arm encoder transfer chạy được. Chưa phải APT action expert gốc; source và
-  target synthetic khác seed vẫn chưa chứng minh cross-robot/task transfer. Cần nguồn pretraining độc
-  lập, target subsampling và nhiều seed để nghiên cứu sample efficiency/negative transfer.
-- Lab 06 PARTIAL: two-frame GRU joint frame/action predictor; chưa có dual-stream latent
-  diffusion, autoregressive rollout, refresh experiment hay drift curves. Không tái lập LingBot.
-- Lab 07 PARTIAL: original MuJoCo slide reacher và learned target tracking; không phải Panda,
-  humanoid, sim-to-real hoặc Helix. Controller PD bị giới hạn không chứng minh stability toàn
-  cục; watchdog dùng simulated age, chưa mô phỏng wall-clock overruns/IPC/network jitter.
-- Validation split dùng để chọn checkpoint; chưa có untouched test set. Không đưa ra claims
-  về generalization trước khi thêm final episode split và repeated-seed confidence intervals.
-- Dataset tải theo yêu cầu; `--episodes 6` không đại diện toàn bộ 206 episodes.
-- Video model chưa có perceptual/PSNR metric riêng ngoài joint loss và hình so sánh.
-
-Ưu tiên tiếp: benchmark PushT đủ budget, episode test split, fixed seeds và paired comparisons;
-sau đó spatial visual tokens cho ACT, temporal history, controlled transfer, video rollout drift;
-cuối cùng mới thêm Panda từ Menagerie cùng license, IK và action-schema adapter riêng.
+Executed checks and measured results are listed only in validation.md. A feature being
+IMPLEMENTED does not imply it has passed an integration test or achieved manipulation success.

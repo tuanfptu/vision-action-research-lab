@@ -1,106 +1,130 @@
-# Vision–Action Research Lab
+# Vision–Action Research Lab — OpenArm
 
-An independent, research-oriented Vision–Action learning laboratory covering Behavioral
-Cloning, ACT, Diffusion/Flow Policies, Action Expert Pretraining, Video–Action World Models,
-and Hierarchical Robot Control.
+An independent research laboratory for learning Vision–Action policies on the **OpenArm 2
+bimanual pick-up-cube dataset**. OpenArm is the sole active robot manipulation benchmark,
+from BC and ACT through diffusion/flow, educational VA pretraining, video–action prediction
+and hierarchical control. No personal robotics repository, environment, model or data is used.
 
-Built from scratch for learning through executable experiments. No personal robotics
-repository, dataset, environment, checkpoint, simulator, or robot-specific integration is
-required. No pretrained weights are downloaded automatically. Original project code is MIT.
-Public dataset and upstream library licenses remain their own.
+## Start on GPU
 
-## Start here
-
-Validated target: Python 3.10, PyTorch 2.7.1 / torchvision 0.22.1, LeRobot 0.3.3,
-MuJoCo 3.3.2. The older stable LeRobot release deliberately supports Ubuntu 22.04's
-Python 3.10 and the pre-2.8 PyTorch line. Latest LeRobot documentation describes a newer
-API; use the versioned references in [docs/references.md](docs/references.md).
+Python 3.10, PyTorch 2.7.1 / torchvision 0.22.1, LeRobot 0.3.3 and MuJoCo 3.3.2.
+The existing `.venv` remains a CPU verification environment. The default training config
+requires CUDA and **never silently falls back to CPU**. GTX 1660 Ti development uses FP32,
+small batches and gradient accumulation. No drivers or ROS packages are changed.
 
 ```bash
-bash scripts/setup.sh
-source .venv/bin/activate
-unset PYTHONPATH  # only this shell; prevents ROS Python packages entering this environment
-va-lab doctor
-va-lab generate --output data/synthetic.npz
-va-lab inspect --data data/synthetic.npz
-va-lab train --data data/synthetic.npz --output runs/bc --model bc
-va-lab train --data data/synthetic.npz --output runs/state --model state
-va-lab train --data data/synthetic.npz --output runs/act --model act
-va-lab evaluate --checkpoint runs/act/best.pt --data data/synthetic.npz
-```
-
-Synthetic curved reaching is an offline teaching task, **not PushT**. The consistent public
-comparison benchmark is PushT image, with absolute agent-position targets in simulator
-pixel coordinates. Start with six episodes to check the pipeline, then increase the data
-budget and train for longer before studying success rates.
-
-```bash
-va-lab download --episodes 6 --output data/pusht.npz
-va-lab inspect --data data/pusht.npz --output runs/pusht.png
-va-lab train --data data/pusht.npz --output runs/pusht_bc --model bc
-va-lab train --data data/pusht.npz --output runs/pusht_act --model act
-va-lab rollout --checkpoint runs/pusht_act/best.pt --horizon 1 --ensemble
+bash scripts/setup_gpu.sh
+source .venv-gpu/bin/activate
+unset PYTHONPATH
+export HF_HOME="$PWD/data/hf"
+export MUJOCO_GL=egl
+va-lab doctor --require-gpu
 va-lab verify-lerobot
-va-lab train --data data/pusht.npz --output runs/official_act --model official_act
+va-lab download --episodes 30 --cameras ceiling wrist_right --size 32
+va-lab inspect --data data/openarm.npz
+va-lab train --model bc --output runs/openarm_bc
+va-lab train --model state --output runs/openarm_state
+va-lab train --model act --output runs/openarm_act
+va-lab train --model official_act --output runs/openarm_official_act
 ```
 
-The public parquet export intentionally handles the versioned v2.1 image dataset without
-silently migrating it. The separate official LeRobot ACT smoke path and trainable adapter verify the pinned
-API. Educational ACT uses a small pooled CNN and simplified conditional memory; it is
-not architecture-equivalent to official ACT. Dataset manifests record the exact Hub SHA.
-Images are resized to 32×32 to fit development hardware; report this when comparing results.
+If the cache already exists, skip download or choose a new output file. Exports and runs
+refuse to overwrite existing artifacts. The old local data/checkpoints are retained and
+rejected by the new schema-aware loader when incompatible. Historical reports live only in
+[the superseded archive](docs/archive/pre_openarm/README.md). `main` preserves the old
+implementation; this migration is developed on `feat/openarm-migration`.
 
-## Curriculum and implementation scope
+## One dataset, every lab
 
-| Lab | Executable implementation | Limits |
-|---|---|---|
-| [00](labs/lab_00_setup/README.md) | Fresh venv, dependency checks, seeds, JSONL logs, CPU CI | GPU validation depends on driver |
-| [01](labs/lab_01_va_fundamentals/README.md) | State-only/vision BC, training, best checkpoint, offline and PushT evaluation | Short runs are smoke experiments |
-| [02](labs/lab_02_act/README.md) | CVAE Transformer, padding mask, KL, chunks, temporal ensemble, official API check | Educational architecture |
-| [03](labs/lab_03_act_ablation/README.md) | Automated chunk/latent/KL and rollout horizon/ensemble sweeps; reports | PARTIAL: history/encoder/data-budget sweeps and multi-seed study remain |
-| [04](labs/lab_04_diffusion_flow/README.md) | Noise prediction, DDIM sampling, rectified-flow velocity and Euler sampling | Small MLP action generator |
-| [05](labs/lab_05_apt/README.md) | Source pretraining; random/frozen/partial/full encoder transfer | APT-inspired; no official model reproduction |
-| [06](labs/lab_06_lingbot_va/README.md) | Low-resolution future frames + actions; visualization | PARTIAL: no latent dual-stream diffusion or long autoregressive evaluation |
-| [07](labs/lab_07_helix02/README.md) | Learned VA proposals, 100 Hz bounded controller, timeout, MuJoCo reacher | PARTIAL: original two-slide model, no Panda integration; not Helix reproduction |
+[enactic/openarm-2-cell-pick_up_cube_mujoco-lerobot](https://huggingface.co/datasets/enactic/openarm-2-cell-pick_up_cube_mujoco-lerobot)
+contains 30 episodes, 5,405 frames at 30 Hz, five camera views and 16 joint positions/actions.
+Use **v2.1** at immutable SHA `c5f7d41a37f9d9456b74eff673870997545c2d25` with LeRobot 0.3.3.
+`main` on the dataset is v3 and is not used. Dataset and official assets are Apache-2.0;
+original laboratory source remains MIT.
 
-Each lab includes a Vietnamese tutorial. See [validation](docs/validation.md) for executed
-checks and measurements; [limitations](docs/limitations.md) for precise outstanding work.
-No short-run ranking is claimed as a research conclusion.
+The vector order is right joints 1–7, right gripper, left joints 1–7, left gripper. All 16
+values are preserved in every policy. Grippers are signed finger-joint angles, not normalized
+open/closed fractions. See [joint/camera semantics](docs/openarm_contract.md) before deployment.
 
-## Engineering and experiments
+Cached images are `[N,V,3,H,W]` uint8; batches are `[B,V,3,H,W]` floats. Each camera passes
+through a shared CNN; ordered per-view features concatenate with joint state. Action chunks
+are `[B,K,16]`. The official ACT adapter instead passes each camera under its own LeRobot
+feature key. Camera order and all joint names are stored in checkpoints and manifests.
 
-`src/va_lab/` contains datasets, models, training, evaluation, simulation, controllers and
-utilities. `configs/` holds CPU, low-VRAM GPU, cloud, model, dataset and evaluation settings.
-`runs/` and `data/` are ignored; never commit downloaded data or weights. Experiments create
-a fresh output directory, config, exact episode split, per-epoch metrics, best checkpoint,
-training-only normalization statistics and dataset hash. Evaluation rejects a changed dataset.
-The held-out split is **validation**, not an untouched final test set; model selection uses it.
-Use a separate final episode set before reporting publication-quality generalization results.
+![OpenArm cameras and joint trajectories](docs/figures/openarm_observations.png)
+
+The seeded episode split is **22 train / 4 validation / 4 untouched test**. Training and
+architecture selection read only train/validation episodes. Final test requires an explicit
+command; repeated test-set tuning invalidates the untouched-test interpretation.
 
 ```bash
-python scripts/ablate.py --data data/pusht.npz --output runs/ablation --rollouts
-va-lab train --data data/synthetic.npz --output runs/flow --model flow
-va-lab train --data data/synthetic.npz --output runs/diffusion --model diffusion
-va-lab train --data data/synthetic.npz --output runs/video --model video
-va-lab video --checkpoint runs/video/best.pt --data data/synthetic.npz
-va-lab record --output data/reacher.npz
-va-lab hierarchy --checkpoint runs/bc/best.pt
-python scripts/report.py runs
-make test lint
+va-lab evaluate --checkpoint runs/openarm_bc/best.pt --split validation
+# Only after selecting the final experiment:
+va-lab evaluate --checkpoint runs/openarm_bc/best.pt --split test --output runs/final_test.json
 ```
 
-CPU is the verified starting point. `configs/training/low_vram.yaml` uses batch 8 and hidden
-width 64; `cloud.yaml` raises the budget. These GPU presets are estimates, not measured
-VRAM guarantees. For GTX 1660 Ti use FP32 and a supported PyTorch 2.7.1 CUDA wheel such as
-cu118 **only after checking the installed driver**; never modify drivers through setup.
-The checked-in setup installs CPU wheels. See [environment](docs/environment.md).
+## Executed migration checks
 
-## Research integrity
+**29 tests passed on the GTX 1660 Ti**, including real official data and CUDA gradients.
+Seven policy families trained and reloaded checkpoints on GPU. Eight ACT ablations and four
+same-task transfer arms ran. Independent-scene short rollouts achieved **0/1 success each**;
+exact demonstration-scene reconstruction remains NOT VERIFIED. See the full measured
+[validation report](docs/validation.md), including the undertrained diffusion failure case.
 
-Offline metrics measure normalized action error, chunk variation and synchronized inference
-latency. PushT rollouts separately record environment success, reward, action variation and
-latency. Training loss values across CVAE, diffusion and flow objectives are not comparable.
-Batch latency is not single-action latency. Report seeds, data size, image resolution, action
-schema, hardware, horizons and sampling steps. No large foundation model download is needed.
+## Eight-lab curriculum
 
-[Official papers, code and licensing](docs/references.md) · [Vietnamese lab index](labs/README.md)
+| Lab | Working implementation | Scope |
+|---|---|---|
+| [00](labs/lab_00_setup/README.md) | Official LeRobot loading, metadata, all joints, cameras, CUDA doctor | Dataset v2.1 is pinned |
+| [01](labs/lab_01_va_fundamentals/README.md) | BC/state-only, GPU train, checkpoints, per-joint RMSE | Offline prediction is not manipulation success |
+| [02](labs/lab_02_act/README.md) | Multi-camera educational ACT plus official LeRobot ACT | Reduced width/depth; no paper reproduction claim |
+| [03](labs/lab_03_act_ablation/README.md) | Chunk/latent/KL/camera/data-budget grid; horizon and ensemble control | Full statistically powered sweep remains PARTIAL |
+| [04](labs/lab_04_diffusion_flow/README.md) | Joint-chunk noise/velocity learning, DDIM/Euler | Compare sampled behavior, not unrelated training losses |
+| [05](labs/lab_05_apt/README.md) | Disjoint OpenArm source/target episodes; four transfer arms | Same task only; genuine cross-task transfer NOT VERIFIED |
+| [06](labs/lab_06_lingbot_va/README.md) | Multi-camera temporal GRU, future video/actions, PSNR visualization | Educational prototype; large world model NOT IMPLEMENTED |
+| [07](labs/lab_07_helix02/README.md) | Official OpenArm Cell assets, 16-target controller, joint mapping, watchdog | Exact demonstration scene NOT VERIFIED |
+
+All tutorials are Vietnamese with English technical terms. Review [executed validation](docs/validation.md),
+[limitations](docs/limitations.md), and [reproduction commands](docs/reproduction.md).
+
+## Independent simulation
+
+```bash
+va-lab assets
+va-lab sim-smoke --render
+va-lab rollout --checkpoint runs/openarm_bc/best.pt --allow-unverified-scene
+va-lab hierarchy --checkpoint runs/openarm_bc/best.pt --policy-hz 10 --allow-unverified-scene
+va-lab record --output data/openarm_collected.npz
+```
+
+Official public repositories are acquired into ignored `assets/upstream/` with immutable SHAs,
+without symlinks/submodules or previous local integrations. We use the official v2 Cell demo,
+not a reconstructed original demonstration environment. Named joint/actuator mapping is
+validated; the lifter and mimic fingers are handled explicitly. Camera parameters, gains,
+object initial poses and source scene commit cannot be verified as identical to the dataset.
+Rollouts therefore require explicit acknowledgment and report **independent-scene results**.
+
+`record` collects real MuJoCo joint-excitation sequences for software and initial representation
+experiments. It does **not** manufacture expert cube-pick demonstrations. Add teleoperation or
+a verified task controller and diverse tasks before claiming useful action-expert pretraining.
+
+## Engineering
+
+`src/va_lab/` contains datasets, models, training, evaluation, controllers and simulation.
+`configs/` holds CPU smoke, low-VRAM GPU and cloud configurations. Training records the exact
+split, camera mapping, training-only statistics, dataset hash, GPU/runtime, actual metrics and
+peak VRAM. Checkpoint reload rejects a changed dataset. No foundation-model weights download.
+
+```bash
+make test lint
+python scripts/ablate.py --output runs/openarm_ablation --grid configs/models/act_smoke_ablation.yaml
+va-lab train --model diffusion --output runs/openarm_diffusion
+va-lab train --model flow --output runs/openarm_flow
+va-lab train --model video --output runs/openarm_video
+va-lab video --checkpoint runs/openarm_video/best.pt
+python scripts/transfer.py --output runs/openarm_transfer
+```
+
+Thirty episodes of one task cannot establish broad bimanual generalization. Model success,
+sample efficiency and transfer advantages remain hypotheses until measured with adequate
+budgets, multiple seeds, held-out episodes and a verified simulator/task protocol.

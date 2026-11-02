@@ -1,5 +1,6 @@
 model: bc
 seed: 7
+split_seed: 7
 device: cuda
 batch_size: 64
 dim: 128
@@ -9,3 +10,7 @@ beta: 0.01
 lr: 0.001
 epochs: 100
 sampling_steps: 10
+gradient_accumulation: 1
+cameras: [ceiling, wrist_right]
+image_size: 32
+history: 2

@@ -1,0 +1,83 @@
+{
+  "repo_id": "enactic/openarm-2-cell-pick_up_cube_mujoco-lerobot",
+  "revision": "c5f7d41a37f9d9456b74eff673870997545c2d25",
+  "episode": 0,
+  "frames": 263,
+  "sample_shapes": {
+    "observation.images.ceiling": [
+      3,
+      600,
+      960
+    ],
+    "observation.images.head_left": [
+      3,
+      720,
+      1280
+    ],
+    "observation.images.head_right": [
+      3,
+      720,
+      1280
+    ],
+    "observation.images.wrist_left": [
+      3,
+      600,
+      960
+    ],
+    "observation.images.wrist_right": [
+      3,
+      600,
+      960
+    ],
+    "action": [
+      16
+    ],
+    "observation.state": [
+      16
+    ],
+    "timestamp": [],
+    "frame_index": [],
+    "episode_index": [],
+    "index": [],
+    "task_index": [],
+    "success": [],
+    "last_frame_index": []
+  },
+  "action_names": [
+    "right_joint1.pos",
+    "right_joint2.pos",
+    "right_joint3.pos",
+    "right_joint4.pos",
+    "right_joint5.pos",
+    "right_joint6.pos",
+    "right_joint7.pos",
+    "right_gripper.pos",
+    "left_joint1.pos",
+    "left_joint2.pos",
+    "left_joint3.pos",
+    "left_joint4.pos",
+    "left_joint5.pos",
+    "left_joint6.pos",
+    "left_joint7.pos",
+    "left_gripper.pos"
+  ],
+  "action": [
+    -0.5020321011543274,
+    0.46646618843078613,
+    0.18506701290607452,
+    2.0634148120880127,
+    0.38408687710762024,
+    -0.35819581151008606,
+    0.69549959897995,
+    -0.7850000262260437,
+    0.48043400049209595,
+    -0.3708380162715912,
+    -0.3202148675918579,
+    2.0523974895477295,
+    -0.31028828024864197,
+    0.3200392425060272,
+    -0.5255988240242004,
+    0.7850000262260437
+  ],
+  "timestamp": 0.0
+}

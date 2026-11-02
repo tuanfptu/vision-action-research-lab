@@ -1,0 +1,31 @@
+{
+  "normalized_action_mse": 0.42333405590382983,
+  "joint_rmse_rad": [
+    0.20543527603149414,
+    0.14114496111869812,
+    0.23453162610530853,
+    0.19394132494926453,
+    0.1904495507478714,
+    0.20802773535251617,
+    0.12724201381206512,
+    0.2716689705848694,
+    0.1148393377661705,
+    0.06900529563426971,
+    0.1290670782327652,
+    0.15974001586437225,
+    0.12337369471788406,
+    0.09469626843929291,
+    0.08780788630247116,
+    3.816476237261668e-05
+  ],
+  "normalized_chunk_delta_mse": 0.4989479288481505,
+  "batch_latency_ms_mean": 2.5992401547173793,
+  "batch_latency_ms_p95": 2.725274450085635,
+  "evaluated_action_scalars": 42176,
+  "sampling_steps": 10,
+  "device": "cuda",
+  "scope": "offline joint prediction; not manipulation success",
+  "checkpoint": "runs/openarm_gpu_flow/best.pt",
+  "epoch": 2,
+  "split": "validation"
+}

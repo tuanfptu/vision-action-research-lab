@@ -1,81 +1,97 @@
-# LAB 00 — Environment và Research Infrastructure
+# LAB 00 — OpenArm Environment & Dataset
 
-## 1. Mục tiêu học tập
+## 1. Mục tiêu
 
-Hiểu môi trường độc lập, dependency compatibility và khác biệt giữa smoke test với kết quả research.
+Đọc đúng v2.1, kiểm tra GPU, toàn bộ joints và synchronization.
 
-## 2. Kiến thức và môi trường cần có
+## 2. Prerequisites
 
-Ubuntu 22.04, Python 3.10, terminal, kiến thức tensor PyTorch. Không cần ROS trong Python env.
+Python/PyTorch, supervised learning và các lab trước. Dùng `.venv-gpu`, clear ROS PYTHONPATH
+trong shell dự án. Dataset không cần ROS. Không đọc hoặc tái sử dụng previous robotics projects.
 
 ## 3. Nền tảng toán học
 
-Với cùng seed s, pipeline cần cùng split và khởi tạo. Determinism CPU không bảo đảm bitwise equivalence giữa GPU, kernel và phiên bản thư viện. Hash H(D) kiểm tra identity của dữ liệu; nó không chứng minh chất lượng hay license.
+x_t=(I_t^1,…,I_t^V,s_t), s_t∈R¹⁶, a_t∈R¹⁶. Timestamp numeric và video PTS phải khớp trong 1 ms. Split theo episode, không theo frame.
 
-## 4. Kiến trúc và computational flow
+## 4. Architecture và computational flow
 
-CPU: Python → venv → torch/torchvision → package → pytest → MuJoCo physics. Config YAML chọn batch, chunk, model; run directory ghi JSONL và checkpoint.
+Official LeRobotDataset → schema validator → numeric table + sequential PyAV → named multi-camera cache.
 
 ## 5. Tensor shapes
 
-B=8, C=3, H=W=32, state=2, K=4, action=2. Input batch: image [8,3,32,32], state [8,2], target [8,4,2], valid [8,4].
+N frame, V camera được chọn, B batch, K action chunk, H history, D feature width.
+Cache image [N,V,3,R,R]; batch image [B,V,3,R,R], state [B,16]. CNN xử lý [B×V,3,R,R]
+→ [B,V,D]; concatenate [B,V×D+16] → context [B,D]. Action target/prediction [B,K,16],
+mask [B,K]. ACT posterior [B,K+1,D], μ/logvar/z [B,L], queries [B,K,D]. Generative input
+[B,K×16+D+3]. Video history [B,H,V,3,R,R], future [B,K,V,3,16,16]. Mọi dimension state/action
+được suy từ validated cache và lưu config; không hardcode 2D hoặc tùy ý reorder joints.
 
-## 6. Biểu diễn dữ liệu
+## 6. Dataset representation và semantics
 
-Mỗi file NPZ chứa `image [N,3,32,32]` float trong [0,1], `state [N,2]`,
-`action [N,2]`, `episode [N]`. Synthetic dùng tọa độ [0,1]; PushT dùng pixel coordinate
-cho cả state và absolute target. Không truyền normalized action trực tiếp vào simulator.
-Window có `valid [B,K]`; cuối episode lặp lại frame/action chỉ để padding và dùng mask.
-Normalization chỉ fit trên train episodes. Chia frame ngẫu nhiên sẽ rò rỉ temporal context.
-Manifest ghi SHA256, source và Hub revision; checkpoint kiểm tra hash khi đánh giá.
+30 episodes / 5,405 frames / 30Hz, v2.1 immutable SHA
+c5f7d41a37f9d9456b74eff673870997545c2d25. Thứ tự: right joints1–7, right gripper,
+left joints1–7, left gripper. Absolute position radians; gripper là signed finger_joint1
+angle, không phải [0,1] opening ratio. Default views ceiling+wrist_right; all five views
+được hỗ trợ. [Contract chi tiết](../../docs/openarm_contract.md) là nguồn mapping duy nhất.
 
-## 7. Walkthrough mã nguồn
+## 7. Walkthrough implementation
 
-Đọc `src/va_lab/datasets/core.py` theo thứ tự generate → read_arrays → episode_split →
-statistics → Windows. Sau đó đọc model tương ứng trong `models/policies.py`,
-`training/engine.py`, và `simulation/benchmark.py`. Train dùng AdamW, zero_grad,
-loss.backward, clip_grad_norm, optimizer.step; JSONL ghi số thực, best.pt lưu model,
-config, split và normalization. Evaluation load đúng checkpoint, `eval()` và `no_grad()`.
-Không xem tensor random forward pass là bằng chứng policy có kỹ năng.
+Đọc datasets/public.py acquire → export_openarm, datasets/core.py read_arrays → episode_split
+→ statistics → Windows. Đọc models/policies.py hoặc models/official.py, sau đó training/engine.py.
+Training dùng zero_grad, loss.backward, accumulation, gradient clipping, optimizer.step;
+checkpoints ghi stats, split, camera order, schema và hash. Evaluation eval()+no_grad(), không
+posterior labels. Simulation resolve mapping bằng tên thay vì suy thứ tự qpos từ vector dataset.
 
-## 8. Lệnh training và inference
-
+## 8. Lệnh training / inference
 
 ```bash
-source .venv/bin/activate
+source .venv-gpu/bin/activate
 unset PYTHONPATH
-va-lab generate --output data/synthetic.npz
-va-lab inspect --data data/synthetic.npz
-```
-
-```bash
-bash scripts/setup.sh
-make test lint
-va-lab doctor
+export HF_HOME="$PWD/data/hf"
+export MUJOCO_GL=egl
+va-lab doctor --require-gpu
 va-lab verify-lerobot
+va-lab download --episodes 30
+va-lab inspect
 ```
 
-## 9. Hành vi kỳ vọng và cách đọc kết quả
+Download cache lần đầu theo README, bỏ qua nếu cache đã tồn tại. Output run directory phải mới.
 
-Import, finite loss/gradient và save/load thành công chỉ cho biết software path hoạt động. GPU chưa được xác nhận nếu cuda_available=false.
+## 9. Expected behavior và evidence
 
-Không có giá trị performance kỳ vọng giả định. Đọc số đo đã chạy trong
-[validation](../../docs/validation.md); không so training loss giữa objective khác nhau.
+Shapes đúng và loss/gradient hữu hạn là kiểm tra software path; không phải bằng chứng học task.
+Chỉ báo số được ghi ở [validation](../../docs/validation.md). Report device, peak VRAM, episode
+split, raw per-joint RMSE và camera names. Test episodes chỉ truy cập bằng evaluate --split test
+sau model selection; các thí nghiệm trong migration mặc định giữ test chưa đánh giá.
 
-## 10. Bài tập thực nghiệm
+## 10. Bài tập
 
-Đổi seed và kiểm tra split thay đổi; lặp seed giữ split. Cố tình sửa dataset sau train rồi chạy evaluate để quan sát hash rejection. Ghi pip freeze và phân biệt package version với CUDA runtime.
+So state-only/vision với cùng split; đổi một yếu tố mỗi lần. So một/two/five cameras, K=1/4/8,
+history=1/2/4, data budget=50/100% trong training pool. Plot từng joint và gripper, không chỉ
+scalar aggregate. Đo sampling steps/latency và ít nhất ba seed khi đủ budget. Với simulation,
+đối chiếu named limits, actual commands, tracking error, deadline misses và cube lift criterion.
 
-## 11. Failure analysis
+## 11. Failure analysis và giới hạn
 
-PYTHONPATH từ ROS có thể làm pytest nạp plugin ngoài venv; bỏ biến trong tiến trình dự án, không gỡ ROS. pip check không phát hiện mọi binary ABI mismatch; vẫn phải forward/backward.
+Không nhầm dataset main v3 với v2.1; không dùng upstream aggregate stats cho model selection.
 
-## 12. Câu hỏi kiểm tra hiểu sâu
+Timestamps sai gây image/action misalignment; split theo frame gây leakage; double-normalization
+làm target sai đơn vị. Constant joint std cần clamp và raw-RMSE kiểm tra. MSE thấp chưa bảo đảm
+contact dynamics tốt. Không truyền normalized action trực tiếp vào actuator, không gọi
+controller tracking thành công là successful learned manipulation.
 
-Tại sao venv vẫn có thể bị PYTHONPATH làm nhiễm? Vì sao seed không đủ để tái lập experiment? CUDA wheel khác NVIDIA driver như thế nào?
+## 12. Câu hỏi tự kiểm tra
+
+Vì sao right gripper có giá trị âm mà không phải torque? Vì sao dataset action order khác
+MJCF qpos order? Tại sao val/test không được fit normalization? Camera order đổi ảnh hưởng
+fusion thế nào? K khác execution horizon ra sao? Điều gì đủ để chứng minh dataset/simulator
+tương thích, và điều gì mới chỉ xác nhận offline regression?
 
 ## 13. Tài liệu chính thức
 
-LeRobot versioned metadata; PyTorch release compatibility; MuJoCo overview. Các URL, version và ghi chú license ở [references](../../docs/references.md).
-Đọc [limitations](../../docs/limitations.md) trước khi diễn giải một smoke experiment thành
-kết quả nghiên cứu. Các claim của công trình gốc không phải kết quả của repository này.
+[Dataset OpenArm](https://huggingface.co/datasets/enactic/openarm-2-cell-pick_up_cube_mujoco-lerobot),
+[OpenArm MuJoCo](https://github.com/enactic/openarm_mujoco),
+[OpenArm Dataset](https://github.com/enactic/openarm_dataset),
+[LeRobot v0.3.3](https://github.com/huggingface/lerobot/tree/v0.3.3).
+Paper/implementation ACT, Diffusion/Flow, APT, LingBot và Helix được ghi ở
+[references](../../docs/references.md), cùng license và ghi chú educational scope.

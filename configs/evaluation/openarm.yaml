@@ -1,0 +1,9 @@
+split: validation
+final_test_requires_explicit_command: true
+max_steps: 60
+episodes: 1
+policy_hz: 30
+physics_hz: 1000
+scene: v2/cell/demo.xml
+exact_dataset_scene: NOT_VERIFIED
+success_definition: cube_lift_8cm_for_10_ticks
