@@ -1,0 +1,51 @@
+{
+  "cases": [
+    {
+      "case": "fresh",
+      "max_command_rad": 0.002,
+      "expected_hold": false,
+      "passed": true
+    },
+    {
+      "case": "at_timeout",
+      "max_command_rad": 0.002,
+      "expected_hold": false,
+      "passed": true
+    },
+    {
+      "case": "stale",
+      "max_command_rad": 0.0,
+      "expected_hold": true,
+      "passed": true
+    },
+    {
+      "case": "nan_target",
+      "max_command_rad": 0.0,
+      "expected_hold": true,
+      "passed": true
+    },
+    {
+      "case": "inf_target",
+      "max_command_rad": 0.0,
+      "expected_hold": true,
+      "passed": true
+    },
+    {
+      "case": "nan_clock",
+      "passed": true
+    },
+    {
+      "case": "negative_dt",
+      "passed": true
+    },
+    {
+      "case": "nan_state",
+      "passed": true
+    },
+    {
+      "case": "wrong_shape",
+      "passed": true
+    }
+  ],
+  "scope": "deterministic controller interface; no real-time IPC or hardware certification"
+}

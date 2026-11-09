@@ -26,8 +26,26 @@ class BoundedController:
     timeout: float = 0.25
     max_speed: float = 2.0
 
+    def __post_init__(self):
+        self.lower, self.upper = np.asarray(self.lower), np.asarray(self.upper)
+        if (
+            self.lower.ndim != 1
+            or self.lower.shape != self.upper.shape
+            or not np.isfinite(self.lower).all()
+            or not np.isfinite(self.upper).all()
+            or np.any(self.lower > self.upper)
+            or not np.isfinite([self.timeout, self.max_speed]).all()
+            or min(self.timeout, self.max_speed) <= 0
+        ):
+            raise ValueError("Invalid controller limits or timing")
+
     def step(self, position: np.ndarray, target: np.ndarray, age: float, dt: float) -> np.ndarray:
-        if dt <= 0 or age < 0:
+        position, target = np.asarray(position), np.asarray(target)
+        if position.shape != self.lower.shape or target.shape != self.lower.shape:
+            raise ValueError("Controller coordinate shape mismatch")
+        if not np.isfinite(position).all():
+            raise ValueError("Nonfinite measured position: no reliable hold target")
+        if not np.isfinite([dt, age]).all() or dt <= 0 or age < 0:
             raise ValueError("Invalid control time")
         if age > self.timeout or not np.isfinite(target).all():
             return np.clip(position, self.lower, self.upper)

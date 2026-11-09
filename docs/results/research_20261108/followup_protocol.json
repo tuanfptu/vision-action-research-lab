@@ -1,0 +1,35 @@
+{
+  "main_protocol_sha256": "8293ff14387991501761e29276bab67e5ace463b4a36bbe46548a9217f9f1475",
+  "selection_sha256": "0b2c005d43f5f78ddd9cda53113e2b1d2777d6a68db4a34ac318d009acc905a4",
+  "runner_sha256": "d1627d1253e29f10a724931be4e6e45273eea0d332547dac29749523f59bf1f5",
+  "data_sha256": "994a1da68e0af2d877a3c2943d5e4c1377d544b1311cf5459cfad2f7e916da4f",
+  "transfer": "same-task disjoint global-train pools; seeds7/17/27; random/frozen/partial/full; not cross-task",
+  "control": {
+    "checkpoint_seed": 7,
+    "families": [
+      "bc",
+      "official_act"
+    ],
+    "cases": [
+      "bc30",
+      "selected30",
+      "selected10"
+    ],
+    "episodes_per_case": 10,
+    "ticks_per_episode": 300,
+    "reset_seeds": [
+      10000,
+      10001,
+      10002,
+      10003,
+      10004,
+      10005,
+      10006,
+      10007,
+      10008,
+      10009
+    ],
+    "scene": "independent official scene, NOT dataset-equivalent"
+  },
+  "test_use": "none; no further access to held-out action labels"
+}

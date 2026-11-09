@@ -59,7 +59,8 @@ Download cache lần đầu theo README, bỏ qua nếu cache đã tồn tại. 
 Shapes đúng và loss/gradient hữu hạn là kiểm tra software path; không phải bằng chứng học task.
 Chỉ báo số được ghi ở [validation](../../docs/validation.md). Report device, peak VRAM, episode
 split, raw per-joint RMSE và camera names. Test episodes chỉ truy cập bằng evaluate --split test
-sau model selection; các thí nghiệm trong migration mặc định giữ test chưa đánh giá.
+sau model selection. Migration ban đầu chưa mở test; study 08/11/2026 đã đánh giá test sau
+selection lock. Không coi split này là untouched cho việc tuning tiếp theo.
 
 ## 10. Bài tập
 
@@ -95,3 +96,21 @@ Paper/implementation ACT, Diffusion/Flow, APT, LingBot và Helix được ghi �
 
 Khi đổi training-data budget, normalization statistics cũng đổi. Vì vậy normalized MSE giữa
 các budget không cùng thang đo; dùng raw per-joint RMSE (radians) để so sánh các budget.
+
+## 14. Thiết kế đối chứng và cách đọc uncertainty
+
+Study mới có ba seed 7/17/27 và sáu thay đổi độc lập: K=1, K=8, latent=4, β=0, chỉ ceiling,
+50% train episodes. Baseline ACT dùng lại, không train thêm một baseline khác cho từng ô.
+Mọi split và learning budget nằm trong protocol. Đây là one-factor study; interaction và
+full factorial grid chưa được thực nghiệm này giải quyết.
+
+K khác nhau làm số target trong chunk khác nhau, nên bảng đối chiếu dùng **first-action MSE**
+(+0) thay vì so mean của các horizon không tương ứng. Data budget khác thì std normalization
+khác, nên phải so raw radian MSE. Camera count thay đổi cả input information và fusion weights;
+đừng mô tả nó như chỉ một phép tắt sensor trên cùng model.
+
+Paired difference giữ cùng episode và seed. Bootstrap resample hai trục seed/episode, không
+resample overlapping windows như IID. Với bốn validation episodes, interval vẫn rất dễ lệch;
+không biến một CI không qua 0 thành tuyên bố tổng quát sau nhiều exploratory comparisons.
+Bài tập: viết lại giả thuyết có thể bị bác bỏ, endpoint chính và điều kiện dừng trước khi chạy.
+Lệnh study và báo cáo: [reproduction](../../docs/reproduction.md), [results](../../docs/research_report.md).

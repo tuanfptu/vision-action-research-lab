@@ -1,0 +1,116 @@
+{
+  "design": {
+    "models": [
+      "bc",
+      "state",
+      "act",
+      "official_act",
+      "diffusion",
+      "flow",
+      "video"
+    ],
+    "seeds": [
+      7,
+      17,
+      27
+    ],
+    "training": {
+      "model": "bc",
+      "seed": 7,
+      "split_seed": 7,
+      "device": "cuda",
+      "preload_device": true,
+      "batch_size": 64,
+      "gradient_accumulation": 1,
+      "dim": 64,
+      "chunk": 4,
+      "latent": 8,
+      "beta": 0.01,
+      "lr": 0.001,
+      "epochs": 12,
+      "sampling_steps": 10,
+      "cameras": [
+        "ceiling",
+        "wrist_right"
+      ],
+      "image_size": 32,
+      "history": 2
+    },
+    "model_overrides": {
+      "official_act": {
+        "batch_size": 32,
+        "gradient_accumulation": 2
+      }
+    },
+    "ablation_overrides": {
+      "chunk1": {
+        "chunk": 1
+      },
+      "chunk8": {
+        "chunk": 8
+      },
+      "latent4": {
+        "latent": 4
+      },
+      "no_kl": {
+        "beta": 0.0
+      },
+      "ceiling_only": {
+        "cameras": [
+          "ceiling"
+        ]
+      },
+      "half_data": {
+        "train_fraction": 0.5
+      }
+    }
+  },
+  "data_sha256": "994a1da68e0af2d877a3c2943d5e4c1377d544b1311cf5459cfad2f7e916da4f",
+  "dataset_revision": "c5f7d41a37f9d9456b74eff673870997545c2d25",
+  "source_sha256": "301b57997ca7b4f3db194e353e7159aa516fc185d0358765e186417d76d903ba",
+  "base_commit": "072c86c0f59eb1e9e19a39721d1827fec5f25a87",
+  "splits": {
+    "train": [
+      12,
+      14,
+      4,
+      28,
+      22,
+      24,
+      17,
+      3,
+      27,
+      19,
+      18,
+      13,
+      0,
+      25,
+      23,
+      10,
+      8,
+      7,
+      1,
+      15,
+      6,
+      16
+    ],
+    "validation": [
+      20,
+      5,
+      29,
+      26
+    ],
+    "test": [
+      2,
+      21,
+      9,
+      11
+    ]
+  },
+  "primary_metric": "mean across seeds and episodes of raw action MSE rad^2; all joints and valid chunk targets",
+  "checkpoint_selection": "existing trainer validation normalized action MSE + video MSE when applicable",
+  "family_selection": "minimum validation primary metric across registered families; alphabetical tie break",
+  "final_test": "all registered seeds of selected family and BC reference plus persistence/train-mean; no test tuning",
+  "uncertainty": "10000 crossed seed/episode bootstrap draws, seed2026, paired differences; small-sample descriptive only",
+  "scope": "single-task offline pilot, not a paper reproduction or closed-loop performance claim"
+}

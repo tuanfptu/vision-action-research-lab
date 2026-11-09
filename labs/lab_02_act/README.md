@@ -60,7 +60,8 @@ Download cache lần đầu theo README, bỏ qua nếu cache đã tồn tại. 
 Shapes đúng và loss/gradient hữu hạn là kiểm tra software path; không phải bằng chứng học task.
 Chỉ báo số được ghi ở [validation](../../docs/validation.md). Report device, peak VRAM, episode
 split, raw per-joint RMSE và camera names. Test episodes chỉ truy cập bằng evaluate --split test
-sau model selection; các thí nghiệm trong migration mặc định giữ test chưa đánh giá.
+sau model selection. Migration ban đầu chưa mở test; study 08/11/2026 đã đánh giá test sau
+selection lock. Không coi split này là untouched cho việc tuning tiếp theo.
 
 ## 10. Bài tập
 
@@ -93,3 +94,19 @@ tương thích, và điều gì mới chỉ xác nhận offline regression?
 [LeRobot v0.3.3](https://github.com/huggingface/lerobot/tree/v0.3.3).
 Paper/implementation ACT, Diffusion/Flow, APT, LingBot và Helix được ghi ở
 [references](../../docs/references.md), cùng license và ghi chú educational scope.
+
+## 14. Trace một bước CVAE bằng code
+
+Trong `ACT.forward(posterior=True)`, context cộng vào CLS; action_in biến [B,K,16] thành
+[B,K,D]. Mask posterior có một token CLS không bị pad. `moments` xuất [B,2L], chia μ/logvar;
+logvar clamp −10..10. Reconstruction gradient đi qua z reparameterization đến moments và
+posterior; βKL kéo posterior về Gaussian prior. Decoder không nhận action label trực tiếp.
+
+Đổi sang eval không tự tắt posterior nếu gọi sai flag. Research evaluator luôn gọi `sample`,
+mà educational ACT dùng prior mean z=0. Regression test thay action labels và kiểm tra prediction
+không đổi. Đây là test chống label leakage có ý nghĩa, khác việc chỉ kiểm tra output shape.
+
+Đối chiếu official adapter: mỗi view có key riêng, no pretrained backbone, identity normalization.
+Hai code path khác architecture và objective. Câu hỏi: vì sao reconstruction posterior tốt không
+bảo đảm prior-mean inference tốt? Nếu bỏ KL, z có thể mã hóa những gì mà image/state không chứa?
+Phân tích thêm [CVAE và gradient](../../docs/research_methodology.md#4-act-và-cvae-đọc-đúng-gradient-và-inference).

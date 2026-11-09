@@ -1,0 +1,47 @@
+{
+  "scope": "exploratory validation only; no final-test evaluation or model reselection",
+  "selection_sha256": "0b2c005d43f5f78ddd9cda53113e2b1d2777d6a68db4a34ac318d009acc905a4",
+  "runner_sha256": "3e9f204a4e337ff83148cf1a8b7bef2ba49776b6cd81a8ad04e86b2102d0a759",
+  "cases": [
+    {
+      "name": "two32",
+      "data_sha256": "994a1da68e0af2d877a3c2943d5e4c1377d544b1311cf5459cfad2f7e916da4f",
+      "cameras": [
+        "ceiling",
+        "wrist_right"
+      ],
+      "resolution": 32
+    },
+    {
+      "name": "two64",
+      "data_sha256": "d440958a500dff9fc4f461b98d9135ea5a0c42b2d21a36dbfb05bd1ab291df51",
+      "cameras": [
+        "ceiling",
+        "wrist_right"
+      ],
+      "resolution": 64
+    },
+    {
+      "name": "five64",
+      "data_sha256": "d440958a500dff9fc4f461b98d9135ea5a0c42b2d21a36dbfb05bd1ab291df51",
+      "cameras": [
+        "ceiling",
+        "head_left",
+        "head_right",
+        "wrist_left",
+        "wrist_right"
+      ],
+      "resolution": 64
+    }
+  ],
+  "family": "official_act",
+  "seeds": [
+    7,
+    17,
+    27
+  ],
+  "epochs": 3,
+  "batch_size": 64,
+  "gradient_accumulation": 1,
+  "rationale": "fresh matched 3-epoch runs; batch64 for every case, including official ACT BatchNorm; main 12-epoch scores not reused as controls"
+}

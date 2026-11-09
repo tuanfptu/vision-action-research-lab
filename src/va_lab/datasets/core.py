@@ -162,3 +162,66 @@ def statistics(arrays: dict, episodes: np.ndarray | list) -> dict:
         out[key + "_mean"] = t.mean(0)
         out[key + "_std"] = t.std(0, unbiased=False).clamp_min(1e-4)
     return out
+
+
+class WindowBatches:
+    """Vectorized episode-safe windows, optionally resident on CUDA.
+
+    Unlike DataLoader this gathers whole batches without per-frame Python work.
+    A shared tensor pool avoids copying the cache for training and validation.
+    """
+
+    def __init__(self, dataset, batch_size, device, shuffle=False, drop_last=False, pool=None):
+        if batch_size < 1:
+            raise ValueError("Positive batch size required")
+        self.dataset, self.batch_size = dataset, batch_size
+        self.shuffle, self.drop_last, self.device = shuffle, drop_last, device
+        self.indices = torch.as_tensor(dataset.indices, device=device)
+        if pool is None:
+            a, stats = dataset.a, dataset.stats
+            image = torch.as_tensor(a["image"][:, dataset.camera_indices], device=device).float()
+            if a["image"].dtype == np.uint8:
+                image.div_(255)
+            starts, ends = (
+                np.empty(len(a["episode"]), dtype=int),
+                np.empty(len(a["episode"]), dtype=int),
+            )
+            for eid in np.unique(a["episode"]):
+                idx = np.flatnonzero(a["episode"] == eid)
+                starts[idx], ends[idx] = idx[0], idx[-1]
+            pool = {"image": image}
+            for key in ["state", "action"]:
+                x = torch.as_tensor(a[key], device=device).float()
+                pool[key] = (x - stats[key + "_mean"].to(device)) / stats[key + "_std"].to(device)
+            pool.update(
+                start=torch.as_tensor(starts, device=device),
+                end=torch.as_tensor(ends, device=device),
+            )
+        self.pool = pool
+
+    def __len__(self):
+        n = len(self.indices)
+        return (
+            n // self.batch_size if self.drop_last else (n + self.batch_size - 1) // self.batch_size
+        )
+
+    def __iter__(self):
+        ids = self.indices
+        if self.shuffle:
+            ids = ids[torch.randperm(len(ids), device=self.device)]
+        a, ds = self.pool, self.dataset
+        for j in range(len(self)):
+            i = ids[j * self.batch_size : (j + 1) * self.batch_size]
+            offsets = i[:, None] + torch.arange(ds.chunk, device=self.device)
+            end = a["end"][i, None]
+            future = offsets + 1
+            past = i[:, None] + torch.arange(1 - ds.history, 1, device=self.device)
+            yield {
+                "image": a["image"][i],
+                "past": a["image"][torch.maximum(past, a["start"][i, None])],
+                "state": a["state"][i],
+                "action": a["action"][torch.minimum(offsets, end)],
+                "valid": offsets <= end,
+                "future": a["image"][torch.minimum(future, end)],
+                "future_valid": future <= end,
+            }

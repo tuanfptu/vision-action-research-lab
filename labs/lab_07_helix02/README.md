@@ -61,7 +61,8 @@ Download cache lần đầu theo README, bỏ qua nếu cache đã tồn tại. 
 Shapes đúng và loss/gradient hữu hạn là kiểm tra software path; không phải bằng chứng học task.
 Chỉ báo số được ghi ở [validation](../../docs/validation.md). Report device, peak VRAM, episode
 split, raw per-joint RMSE và camera names. Test episodes chỉ truy cập bằng evaluate --split test
-sau model selection; các thí nghiệm trong migration mặc định giữ test chưa đánh giá.
+sau model selection. Migration ban đầu chưa mở test; study 08/11/2026 đã đánh giá test sau
+selection lock. Không coi split này là untouched cho việc tuning tiếp theo.
 
 ## 10. Bài tập
 
@@ -94,3 +95,21 @@ tương thích, và điều gì mới chỉ xác nhận offline regression?
 [LeRobot v0.3.3](https://github.com/huggingface/lerobot/tree/v0.3.3).
 Paper/implementation ACT, Diffusion/Flow, APT, LingBot và Helix được ghi ở
 [references](../../docs/references.md), cùng license và ghi chú educational scope.
+
+## 14. Fault matrix và ý nghĩa của hold
+
+`BoundedController` kiểm tra finite limits, positive timeout/speed, coordinate shape và clock.
+Fresh target bị giới hạn tốc độ 2 rad/s; với dt=1 ms, tối đa 0.002 rad mỗi lệnh. Age đúng
+250 ms còn hợp lệ, age lớn hơn timeout phải hold. Target NaN/Inf hold measured position.
+Measured position NaN không tạo hold đáng tin nên reject; negative dt hoặc NaN clock cũng reject.
+
+Fault experiment mới ghi chín trường hợp và pass/fail từ code thực thi. Đây là kiểm tra giao
+diện lệnh, không phải chứng nhận hardware, IPC deadline hoặc collision safety. MuJoCo servos
+và controller wrapper cũng là hai lớp khác nhau; bound trên command không phải bound trực tiếp
+trên torque hoặc contact force.
+
+Các rollout trước chỉ dài khoảng một giây và đạt 0/1 success. Không đủ thời gian cũng không
+cho phép tuyên bố policy thất bại trên mọi task. Cần source scene chính xác, horizon đủ dài và
+nhiều independent reset seeds để đo manipulation success. Hiện mismatch scene/joint limits còn
+được ghi rõ. Xem [methodology](../../docs/research_methodology.md#8-controller-và-phân-tầng) và
+[compatibility contract](../../docs/openarm_contract.md).

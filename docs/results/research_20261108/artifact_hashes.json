@@ -1,0 +1,34 @@
+{
+  "sha256": {
+    "ablations.json": "af2c8ada8bd991459b11109127ecdbceade46f35c16cae0a791eb1bb9f8d7823",
+    "camera_gpu_telemetry.csv": "c23a2e01799e1a424f6aa6357332e80c5606093a7e9651052d475f97d8b7dd19",
+    "camera_gpu_telemetry_summary.json": "830be144bdb3d6ad17f11c2cd013d313d4173bd24d7376de2bb62bb0330c8767",
+    "camera_resolution_protocol.json": "f5bf025f1c4bd8695c2a7162dbc54d57160164fe4f19665899705c685b3dff94",
+    "camera_resolution_summary.json": "8ce3f3ed36759dd4fc1484566a924e9300427efce98ae0f94c2672c6fae7a54c",
+    "completed.json": "dfe3b769b080aa8b6773646b8f2cd8878ab9712e3a10cb445b5e2bc22bb26e6f",
+    "controller_faults.json": "a81fde8db5c042be776aabe8c57e02b7eae017b69692ea609e71c2dd79272f9a",
+    "final_test.json": "0f11bea314ef8fb246816697b3cf3ed8abe035520ef92979efbcf02f708374f9",
+    "five_view64_integrity.json": "e002106ad9e0372a5c84e853272de7d086c6e8f27c830905ca897cb3bc34ca91",
+    "five_view64_manifest.json": "6ce6f119be8651d2debef864dd9f66e55133bce78e36b650e27a41d1aebe1361",
+    "followup_independent_control_summary.json": "bab30d79d1d6cd1e2f33267bf274a6d74b1970a6e946178fc163d277544827a4",
+    "followup_protocol.json": "d3ef0f88385794bd1627da5ddd442b1ec5320e0995d142ea832ccf77724d622d",
+    "followup_transfer_summary.json": "310433a584307150e3f1d1b690a8bac015ccadef0e0d9b6a2a31b6129941c73a",
+    "gpu_telemetry.csv": "36f64ec42f7ab63eca0d6f3aa9f87ed0d9cea942b0c653194fbd90a4e89a0ef8",
+    "gpu_telemetry_summary.json": "2c150b1ba60802a9b7294ec3281148557fa4bf20c5d9452eb8d65c260080ef13",
+    "protocol.json": "8293ff14387991501761e29276bab67e5ace463b4a36bbe46548a9217f9f1475",
+    "pytest_gpu.txt": "ded3ee6a43049ca98028c2845c0228918930e7198ea912f8b2561c8328b32ce5",
+    "sampler_sensitivity.json": "81118fc1c46f72e7b324369820e2bba3443182b4cd42dc6fef1b40eb47ac33b4",
+    "selection.json": "0b2c005d43f5f78ddd9cda53113e2b1d2777d6a68db4a34ac318d009acc905a4",
+    "started.json": "85b26788ad72202439d4deddb934b034b087c98b5206146c6a1b8feef05954cd",
+    "training_runs.json": "369d6d1e969d218f3365a1d6220d7dfab9ee42b8bcd1c2147f574621ffaa1812",
+    "validation_records.json": "5cf757772da15cb3a4f61d8c188e129fc0cc206e33913c611999aab0304dbde6",
+    "verification.json": "b9447cda7d1872eaa93259f5a043ef371a66f4b487416f97db1167db5dba8a91"
+  },
+  "report_generator_sha256": "659fa4b5f0412dd0c221ca91064b99eea3d43b5f123f51c795bb61b09e9232a8",
+  "report_sha256": "3fedad12409f0540f063d9d06de5c9a4b0c88015ffdba03ab795c57630f874e0",
+  "figure_sha256": {
+    "research_comparison.png": "1bd1de6c71218a8de1dfe05af8b4937ad77795f9a428b619ba9dec934672c5ae",
+    "research_diagnostics.png": "dd813c16923c66bf405dca507b43deae27a18bd350859899cb92aef66302d8ce"
+  },
+  "scope": "measured records only; data, weights, environments ignored"
+}

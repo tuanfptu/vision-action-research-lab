@@ -1,0 +1,83 @@
+{
+  "results": [
+    {
+      "scope": "independent official OpenArm Cell scene; not dataset-equivalent benchmark",
+      "goal": "lift cube >=8cm for 10 consecutive ticks",
+      "success_rate": 0.0,
+      "episodes": 10,
+      "max_steps": 300,
+      "policy_hz": 30,
+      "controller_hz": 1000,
+      "joint_tracking_rmse_rad": 0.14371619272444336,
+      "policy_latency_ms": 0.7478538293398742,
+      "policy_deadline_misses": 0,
+      "device": "cuda",
+      "scene_compatibility": "NOT VERIFIED",
+      "reset_protocol": "official home, cube XY jitter +/-2cm, episode seeds 10000+index",
+      "execution_horizon": 1,
+      "ensemble": false,
+      "command_clipped_values_last_episode": 100,
+      "case": "bc30",
+      "model": "bc",
+      "checkpoint_seed": 7,
+      "checkpoint_sha256": "9db9393c80b3ee64e93af4066078cb8dca315b702908c6b785e130e559e353a3",
+      "success_ci95_wilson": [
+        0.0,
+        0.2775327998628892
+      ]
+    },
+    {
+      "scope": "independent official OpenArm Cell scene; not dataset-equivalent benchmark",
+      "goal": "lift cube >=8cm for 10 consecutive ticks",
+      "success_rate": 0.0,
+      "episodes": 10,
+      "max_steps": 300,
+      "policy_hz": 30,
+      "controller_hz": 1000,
+      "joint_tracking_rmse_rad": 0.01602617349806133,
+      "policy_latency_ms": 9.222251113983171,
+      "policy_deadline_misses": 1,
+      "device": "cuda",
+      "scene_compatibility": "NOT VERIFIED",
+      "reset_protocol": "official home, cube XY jitter +/-2cm, episode seeds 10000+index",
+      "execution_horizon": 1,
+      "ensemble": false,
+      "command_clipped_values_last_episode": 39,
+      "case": "selected30",
+      "model": "official_act",
+      "checkpoint_seed": 7,
+      "checkpoint_sha256": "27ea1f29d5dbcfa3b2732b482a7e6971394c9934ed0ae9e3c5a0e74b07ad26bb",
+      "success_ci95_wilson": [
+        0.0,
+        0.2775327998628892
+      ]
+    },
+    {
+      "scope": "independent official OpenArm Cell scene; not dataset-equivalent benchmark",
+      "goal": "lift cube >=8cm for 10 consecutive ticks",
+      "success_rate": 0.0,
+      "episodes": 10,
+      "max_steps": 300,
+      "policy_hz": 10,
+      "controller_hz": 1000,
+      "joint_tracking_rmse_rad": 0.017251657347945634,
+      "policy_latency_ms": 9.17320016397207,
+      "policy_deadline_misses": 0,
+      "device": "cuda",
+      "scene_compatibility": "NOT VERIFIED",
+      "reset_protocol": "official home, cube XY jitter +/-2cm, episode seeds 10000+index",
+      "execution_horizon": 1,
+      "ensemble": false,
+      "command_clipped_values_last_episode": 171,
+      "case": "selected10",
+      "model": "official_act",
+      "checkpoint_seed": 7,
+      "checkpoint_sha256": "27ea1f29d5dbcfa3b2732b482a7e6971394c9934ed0ae9e3c5a0e74b07ad26bb",
+      "success_ci95_wilson": [
+        0.0,
+        0.2775327998628892
+      ]
+    }
+  ],
+  "scope": "10 independent reset seeds per case; fixed checkpoint seed7; independent scene, not original dataset task evaluation"
+}

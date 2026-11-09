@@ -62,7 +62,8 @@ Download cache lần đầu theo README, bỏ qua nếu cache đã tồn tại. 
 Shapes đúng và loss/gradient hữu hạn là kiểm tra software path; không phải bằng chứng học task.
 Chỉ báo số được ghi ở [validation](../../docs/validation.md). Report device, peak VRAM, episode
 split, raw per-joint RMSE và camera names. Test episodes chỉ truy cập bằng evaluate --split test
-sau model selection; các thí nghiệm trong migration mặc định giữ test chưa đánh giá.
+sau model selection. Migration ban đầu chưa mở test; study 08/11/2026 đã đánh giá test sau
+selection lock. Không coi split này là untouched cho việc tuning tiếp theo.
 
 ## 10. Bài tập
 
@@ -95,3 +96,18 @@ tương thích, và điều gì mới chỉ xác nhận offline regression?
 [LeRobot v0.3.3](https://github.com/huggingface/lerobot/tree/v0.3.3).
 Paper/implementation ACT, Diffusion/Flow, APT, LingBot và Helix được ghi ở
 [references](../../docs/references.md), cùng license và ghi chú educational scope.
+
+## 14. Audit có thể tái lập
+
+Đọc manifest trước khi tạo model: revision phải là SHA v2.1 đã pin, image [5405,2,3,32,32],
+state/action [5405,16]. Kiểm tra từng episode có frame index bắt đầu 0 và tăng 1; timestamp
+phải tăng trong episode. Không suy thời gian bằng global index vì episode có reset.
+
+`WindowBatches` là đường chạy mới để giữ cache trên GPU và gather cả batch. Test đối chiếu
+mọi tensor với `Windows` + DataLoader trên cả CPU/CUDA, gồm history dài hơn episode và chunk
+vượt tail. Shared pool cho train/validation chỉ chia bộ nhớ, không trộn danh sách chỉ số.
+
+Trong nghiên cứu đầy đủ, protocol được ghi trước training và có SHA của data/source. Đọc
+`configs/research/openarm_gpu.yaml`, rồi [phương pháp](../../docs/research_methodology.md).
+Bài tập: giải thích vì sao kiểm tra 150 video không đồng nghĩa cả năm view được dùng trong
+mọi model; xác định view nào nằm trong cache và view nào được chọn từ cache.

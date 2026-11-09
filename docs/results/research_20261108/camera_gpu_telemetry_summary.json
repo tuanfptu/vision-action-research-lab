@@ -1,0 +1,24 @@
+{
+  "samples": 108,
+  "scope": "camera study only; total GPU includes desktop/context",
+  "gpu_util_percent": {
+    "mean": 70.19444444444444,
+    "p95": 97.0,
+    "max": 98.0
+  },
+  "memory_used_mib": {
+    "mean": 3141.212962962963,
+    "p95": 4868.6,
+    "max": 4898.0
+  },
+  "temperature_c": {
+    "mean": 67.01851851851852,
+    "p95": 72.0,
+    "max": 73.0
+  },
+  "power_w": {
+    "mean": 67.22064814814814,
+    "p95": 80.955,
+    "max": 83.39
+  }
+}

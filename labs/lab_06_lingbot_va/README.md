@@ -60,7 +60,8 @@ Download cache lần đầu theo README, bỏ qua nếu cache đã tồn tại. 
 Shapes đúng và loss/gradient hữu hạn là kiểm tra software path; không phải bằng chứng học task.
 Chỉ báo số được ghi ở [validation](../../docs/validation.md). Report device, peak VRAM, episode
 split, raw per-joint RMSE và camera names. Test episodes chỉ truy cập bằng evaluate --split test
-sau model selection; các thí nghiệm trong migration mặc định giữ test chưa đánh giá.
+sau model selection. Migration ban đầu chưa mở test; study 08/11/2026 đã đánh giá test sau
+selection lock. Không coi split này là untouched cho việc tuning tiếp theo.
 
 ## 10. Bài tập
 
@@ -93,3 +94,19 @@ tương thích, và điều gì mới chỉ xác nhận offline regression?
 [LeRobot v0.3.3](https://github.com/huggingface/lerobot/tree/v0.3.3).
 Paper/implementation ACT, Diffusion/Flow, APT, LingBot và Helix được ghi ở
 [references](../../docs/references.md), cùng license và ghi chú educational scope.
+
+## 14. Persistence là đối chứng bắt buộc cho video
+
+Video head tạo ảnh tương lai 16×16. Resize target giống chính implementation; không so MSE ở
+resolution khác. Baseline lặp ảnh hiện tại cho mọi offset. Khi scene phần lớn tĩnh, baseline
+có thể đạt pixel error thấp hơn một mạng sinh ảnh mờ. Điều đó là negative result hữu ích.
+
+Research evaluator ghi MSE của model và persistence cho +1..K, loại future padding. Aggregate
+pixel MSE không tập trung riêng cube/contact; PSNR cao không xác nhận world-model planning.
+GRU dùng history ảnh nhưng state hiện tại được lặp cho mọi history frame, một rút gọn cần nhớ.
+
+Bài tập autoregression phải định nghĩa state feedback trước: giữ state cố định, dùng predicted
+state, hay đọc ground-truth state? Đọc ground-truth mỗi bước là teacher forcing một phần. So
+free-running và refresh-every-r bằng cùng state rule; report drift theo thời gian và không chỉ
+một ảnh dễ nhìn. Prototype hiện chưa thực hiện protocol đó; direct prediction và baseline đã
+được đo. [Phân tích world-model claim](../../docs/research_methodology.md#7-videoaction-và-giới-hạn-world-model-claim).

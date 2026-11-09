@@ -60,7 +60,8 @@ Download cache lần đầu theo README, bỏ qua nếu cache đã tồn tại. 
 Shapes đúng và loss/gradient hữu hạn là kiểm tra software path; không phải bằng chứng học task.
 Chỉ báo số được ghi ở [validation](../../docs/validation.md). Report device, peak VRAM, episode
 split, raw per-joint RMSE và camera names. Test episodes chỉ truy cập bằng evaluate --split test
-sau model selection; các thí nghiệm trong migration mặc định giữ test chưa đánh giá.
+sau model selection. Migration ban đầu chưa mở test; study 08/11/2026 đã đánh giá test sau
+selection lock. Không coi split này là untouched cho việc tuning tiếp theo.
 
 ## 10. Bài tập
 
@@ -93,3 +94,20 @@ tương thích, và điều gì mới chỉ xác nhận offline regression?
 [LeRobot v0.3.3](https://github.com/huggingface/lerobot/tree/v0.3.3).
 Paper/implementation ACT, Diffusion/Flow, APT, LingBot và Helix được ghi ở
 [references](../../docs/references.md), cùng license và ghi chú educational scope.
+
+## 14. Kiểm tra sampler trước khi tin training loss
+
+Trong diffusion, noise target có variance xấp xỉ 1 dù action đã normalize. Khi noise loss giảm,
+clean-action error vẫn có thể lớn vì bước suy x0 chia cho sqrt(alpha_bar). Timestep cuối có
+alpha_bar nhỏ; một noise estimate lệch nhỏ có thể tạo joint target ngoài khoảng demonstration.
+Không clip output sau khi xem test để che failure; nếu cần clipping, đăng ký protocol mới.
+
+Trong flow, thứ tự đường đi là noise tại t=0, action tại t=1, nên velocity target là action−noise.
+Đảo dấu target mà vẫn Euler tiến sẽ đi sai hướng. `sampling_steps` tác động numerical integration,
+không đổi trained weights; nhiều bước không sửa được field đã học sai.
+
+Sampler sensitivity dùng 1/5/10/20/50 bước trên cùng checkpoint cho mỗi seed và validation
+episode. Mỗi window có một stochastic sample, không chọn sample gần label nhất. Latency là batch
+latency CUDA-synchronized sau warm-up, không gọi đó là per-action control latency. Bài tập:
+phân biệt noise prediction error, sampled action error và manipulation success; đề xuất phép đo
+mode coverage cho task có hai đường đi hợp lệ. Xem [phân tích](../../docs/research_methodology.md#5-diffusion-và-flow-objective-khác-cùng-action-contract).

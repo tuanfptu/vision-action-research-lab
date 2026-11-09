@@ -1,0 +1,260 @@
+{
+  "selected_family": "official_act",
+  "validation_summary": {
+    "bc": {
+      "mean": 0.002962400069615493,
+      "ci95": [
+        0.001978362677618861,
+        0.00444237749131086
+      ],
+      "training_seeds": 3,
+      "episodes": 4,
+      "bootstrap_draws": 10000,
+      "bootstrap_seed": 2026,
+      "unit": "rad^2",
+      "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval",
+      "sqrt_macro_mse_rad": 0.054427934644036356,
+      "paired_difference_vs_bc": {
+        "mean": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "training_seeds": 3,
+        "episodes": 4,
+        "bootstrap_draws": 10000,
+        "bootstrap_seed": 2026,
+        "unit": "rad^2",
+        "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval"
+      }
+    },
+    "state": {
+      "mean": 0.0034038011411515376,
+      "ci95": [
+        0.0023163679094674685,
+        0.004921982957360645
+      ],
+      "training_seeds": 3,
+      "episodes": 4,
+      "bootstrap_draws": 10000,
+      "bootstrap_seed": 2026,
+      "unit": "rad^2",
+      "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval",
+      "sqrt_macro_mse_rad": 0.058342104359986345,
+      "paired_difference_vs_bc": {
+        "mean": 0.0004414010715360443,
+        "ci95": [
+          -4.6796941508849464e-05,
+          0.0009500580005502949
+        ],
+        "training_seeds": 3,
+        "episodes": 4,
+        "bootstrap_draws": 10000,
+        "bootstrap_seed": 2026,
+        "unit": "rad^2",
+        "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval"
+      }
+    },
+    "act": {
+      "mean": 0.0024723521491978317,
+      "ci95": [
+        0.0016162596293725073,
+        0.003707176590008495
+      ],
+      "training_seeds": 3,
+      "episodes": 4,
+      "bootstrap_draws": 10000,
+      "bootstrap_seed": 2026,
+      "unit": "rad^2",
+      "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval",
+      "sqrt_macro_mse_rad": 0.049722752832056995,
+      "paired_difference_vs_bc": {
+        "mean": -0.0004900479204176614,
+        "ci95": [
+          -0.0008904931504124155,
+          -0.00010651455765279631
+        ],
+        "training_seeds": 3,
+        "episodes": 4,
+        "bootstrap_draws": 10000,
+        "bootstrap_seed": 2026,
+        "unit": "rad^2",
+        "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval"
+      }
+    },
+    "official_act": {
+      "mean": 0.0023344055516645312,
+      "ci95": [
+        0.0014908252536163975,
+        0.003529363088697816
+      ],
+      "training_seeds": 3,
+      "episodes": 4,
+      "bootstrap_draws": 10000,
+      "bootstrap_seed": 2026,
+      "unit": "rad^2",
+      "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval",
+      "sqrt_macro_mse_rad": 0.04831568639339124,
+      "paired_difference_vs_bc": {
+        "mean": -0.000627994517950962,
+        "ci95": [
+          -0.0011536363163031638,
+          -0.0001269719893267999
+        ],
+        "training_seeds": 3,
+        "episodes": 4,
+        "bootstrap_draws": 10000,
+        "bootstrap_seed": 2026,
+        "unit": "rad^2",
+        "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval"
+      }
+    },
+    "diffusion": {
+      "mean": 16.611635605494182,
+      "ci95": [
+        14.76045274734497,
+        18.799729188283283
+      ],
+      "training_seeds": 3,
+      "episodes": 4,
+      "bootstrap_draws": 10000,
+      "bootstrap_seed": 2026,
+      "unit": "rad^2",
+      "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval",
+      "sqrt_macro_mse_rad": 4.075737430882193,
+      "paired_difference_vs_bc": {
+        "mean": 16.608673205424566,
+        "ci95": [
+          14.758332235661024,
+          18.79583035913917
+        ],
+        "training_seeds": 3,
+        "episodes": 4,
+        "bootstrap_draws": 10000,
+        "bootstrap_seed": 2026,
+        "unit": "rad^2",
+        "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval"
+      }
+    },
+    "flow": {
+      "mean": 0.012226117619623741,
+      "ci95": [
+        0.011094657393793264,
+        0.013676008520027002
+      ],
+      "training_seeds": 3,
+      "episodes": 4,
+      "bootstrap_draws": 10000,
+      "bootstrap_seed": 2026,
+      "unit": "rad^2",
+      "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval",
+      "sqrt_macro_mse_rad": 0.11057177587261471,
+      "paired_difference_vs_bc": {
+        "mean": 0.009263717550008247,
+        "ci95": [
+          0.008692365780007094,
+          0.009807815154393515
+        ],
+        "training_seeds": 3,
+        "episodes": 4,
+        "bootstrap_draws": 10000,
+        "bootstrap_seed": 2026,
+        "unit": "rad^2",
+        "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval"
+      }
+    },
+    "video": {
+      "mean": 0.0035320900400013975,
+      "ci95": [
+        0.002117097727023065,
+        0.005537958140970047
+      ],
+      "training_seeds": 3,
+      "episodes": 4,
+      "bootstrap_draws": 10000,
+      "bootstrap_seed": 2026,
+      "unit": "rad^2",
+      "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval",
+      "sqrt_macro_mse_rad": 0.05943138934941196,
+      "paired_difference_vs_bc": {
+        "mean": 0.0005696899703859041,
+        "ci95": [
+          -1.1382857337594032e-05,
+          0.001397794655834635
+        ],
+        "training_seeds": 3,
+        "episodes": 4,
+        "bootstrap_draws": 10000,
+        "bootstrap_seed": 2026,
+        "unit": "rad^2",
+        "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval"
+      }
+    },
+    "persistence": {
+      "mean": 0.004039009043481201,
+      "ci95": [
+        0.003184859990142286,
+        0.004893158096820116
+      ],
+      "training_seeds": 3,
+      "episodes": 4,
+      "bootstrap_draws": 10000,
+      "bootstrap_seed": 2026,
+      "unit": "rad^2",
+      "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval",
+      "sqrt_macro_mse_rad": 0.06355319853068923,
+      "paired_difference_vs_bc": {
+        "mean": 0.0010766089738657076,
+        "ci95": [
+          -0.0007057755331819257,
+          0.0025791354516210654
+        ],
+        "training_seeds": 3,
+        "episodes": 4,
+        "bootstrap_draws": 10000,
+        "bootstrap_seed": 2026,
+        "unit": "rad^2",
+        "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval"
+      }
+    },
+    "train_mean": {
+      "mean": 0.05716967862099409,
+      "ci95": [
+        0.047956688329577446,
+        0.06638266891241074
+      ],
+      "training_seeds": 3,
+      "episodes": 4,
+      "bootstrap_draws": 10000,
+      "bootstrap_seed": 2026,
+      "unit": "rad^2",
+      "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval",
+      "sqrt_macro_mse_rad": 0.23910181643181652,
+      "paired_difference_vs_bc": {
+        "mean": 0.0542072785513786,
+        "ci95": [
+          0.045593387233869485,
+          0.06294821427824597
+        ],
+        "training_seeds": 3,
+        "episodes": 4,
+        "bootstrap_draws": 10000,
+        "bootstrap_seed": 2026,
+        "unit": "rad^2",
+        "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval"
+      }
+    }
+  },
+  "protocol_sha256": "8293ff14387991501761e29276bab67e5ace463b4a36bbe46548a9217f9f1475",
+  "validation_records_sha256": "a672c53fa0753ff7cac32c12e603bbea6c43929b17523d0ff2866ef36ee7919e",
+  "selected_checkpoints": {
+    "7": "27ea1f29d5dbcfa3b2732b482a7e6971394c9934ed0ae9e3c5a0e74b07ad26bb",
+    "17": "cff0adceca6fa711f1e860609cb0cc9e4f1dcb90669795c3ce1ba245bac3871d",
+    "27": "64bc7ea79399a8069dcf1f0307ac80e2c9977b056d6448403e9a14dca9d2c80f"
+  },
+  "reference_checkpoints": {
+    "7": "9db9393c80b3ee64e93af4066078cb8dca315b702908c6b785e130e559e353a3",
+    "17": "173ce10309eada8fc55717b7016000beebe19559ffd6e47f4475a878f9707586",
+    "27": "2b77b06b4d0a2cd9c6dc90becc1e384a4ff1ed626624cf355c914aa007902941"
+  }
+}

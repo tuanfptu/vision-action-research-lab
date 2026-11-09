@@ -21,3 +21,8 @@ Original laboratory code stays MIT. Official upstream assets are not relicensed 
 into this repository. Download scripts preserve the upstream checkout and its Apache-2.0
 license notices. Dataset metadata/provenance are recorded; raw images and weights are ignored.
 Educational APT/LingBot/Helix components are not claimed to reproduce official systems.
+
+Research-method references rechecked 2026-11-08: [statistical uncertainty in few-run experiments](https://arxiv.org/abs/2108.13264).
+The laboratory implements its own crossed seed/episode bootstrap, not the complete rliable benchmark.
+APT, LingBot-VA and Helix references describe upstream systems; their architecture and scale are
+not attributed to the educational prototypes. See [methodology](research_methodology.md).

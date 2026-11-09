@@ -11,7 +11,14 @@ import torch
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 
-from va_lab.datasets.core import Windows, episode_split, file_hash, read_arrays, statistics
+from va_lab.datasets.core import (
+    WindowBatches,
+    Windows,
+    episode_split,
+    file_hash,
+    read_arrays,
+    statistics,
+)
 from va_lab.models.policies import build, masked_mse
 from va_lab.utils.runtime import seed_all, write_json
 
@@ -145,6 +152,15 @@ def train(
         drop_last=cfg["model"] == "official_act",
     )
     validation = DataLoader(windows(va), batch_size=cfg["batch_size"])
+    if cfg.get("preload_device", False):
+        loader = WindowBatches(
+            windows(used_tr),
+            cfg["batch_size"],
+            device,
+            shuffle=True,
+            drop_last=cfg["model"] == "official_act",
+        )
+        validation = WindowBatches(windows(va), cfg["batch_size"], device, pool=loader.pool)
     if not len(loader):
         raise ValueError("Training budget smaller than batch_size")
     model = build(cfg)
@@ -187,6 +203,8 @@ def train(
         "device": device,
         "gpu": torch.cuda.get_device_name() if device.startswith("cuda") else None,
         "cuda_runtime": torch.version.cuda,
+        "preload_device": cfg.get("preload_device", False),
+        "effective_batch_size": cfg["batch_size"] * cfg.get("gradient_accumulation", 1),
     }
     write_json(out / "runtime.json", runtime)
     write_json(
@@ -201,6 +219,7 @@ def train(
     best = float("inf")
     data_sha = file_hash(data)
     for epoch in range(cfg["epochs"]):
+        epoch_start = time.perf_counter()
         model.train()
         total, n = 0.0, 0
         optimizer.zero_grad(set_to_none=True)
@@ -230,6 +249,8 @@ def train(
         record = {
             "epoch": epoch,
             "train_loss": total / n,
+            "epoch_wall_seconds": time.perf_counter() - epoch_start,
+            "optimizer_steps": math.ceil(len(loader) / accumulation),
             **metrics,
             "peak_gpu_memory_mib": torch.cuda.max_memory_allocated() / 2**20
             if device.startswith("cuda")
@@ -302,7 +323,9 @@ def evaluate_checkpoint(
     )
     metrics = evaluate_model(
         model,
-        DataLoader(ds, batch_size=cfg["batch_size"]),
+        WindowBatches(ds, cfg["batch_size"], device)
+        if cfg.get("preload_device", False)
+        else DataLoader(ds, batch_size=cfg["batch_size"]),
         device,
         cfg.get("sampling_steps", 10),
         ckpt["stats"],

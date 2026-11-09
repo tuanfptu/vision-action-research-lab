@@ -1,0 +1,24 @@
+{
+  "gpu_util_percent": {
+    "mean": 43.84255319148936,
+    "p95": 74.0,
+    "max": 79.0
+  },
+  "memory_used_mib": {
+    "mean": 1070.8595744680852,
+    "p95": 1272.0,
+    "max": 1362.0
+  },
+  "temperature_c": {
+    "mean": 62.91063829787234,
+    "p95": 72.0,
+    "max": 73.0
+  },
+  "power_w": {
+    "mean": 48.43642553191489,
+    "p95": 74.499,
+    "max": 78.69
+  },
+  "samples": 235,
+  "scope": "main study and validation extensions only; nvidia-smi total GPU includes desktop; 2-second samples"
+}

@@ -61,7 +61,8 @@ Download cache lần đầu theo README, bỏ qua nếu cache đã tồn tại. 
 Shapes đúng và loss/gradient hữu hạn là kiểm tra software path; không phải bằng chứng học task.
 Chỉ báo số được ghi ở [validation](../../docs/validation.md). Report device, peak VRAM, episode
 split, raw per-joint RMSE và camera names. Test episodes chỉ truy cập bằng evaluate --split test
-sau model selection; các thí nghiệm trong migration mặc định giữ test chưa đánh giá.
+sau model selection. Migration ban đầu chưa mở test; study 08/11/2026 đã đánh giá test sau
+selection lock. Không coi split này là untouched cho việc tuning tiếp theo.
 
 ## 10. Bài tập
 
@@ -94,3 +95,20 @@ tương thích, và điều gì mới chỉ xác nhận offline regression?
 [LeRobot v0.3.3](https://github.com/huggingface/lerobot/tree/v0.3.3).
 Paper/implementation ACT, Diffusion/Flow, APT, LingBot và Helix được ghi ở
 [references](../../docs/references.md), cùng license và ghi chú educational scope.
+
+## 14. Đối chứng tối thiểu trước khi diễn giải kết quả
+
+Chạy ba kiểu dự đoán: train-mean, persistence và policy. Với persistence, dự đoán action bằng
+joint state hiện tại cho cả K offset; chỉ hợp lệ vì metadata state/action có cùng tên và đơn vị.
+Train-mean không xem observation. Nếu model không vượt hai đối chứng này, hãy kiểm tra học
+được gì trước khi tăng architecture.
+
+Đọc `evaluation/research.py`: denormalize bằng training statistics, cộng squared error theo
+16 joint và valid offsets trong từng episode, rồi trung bình episode. Episode dài không lấn át
+episode ngắn. Không lấy loss của một batch ngẫu nhiên làm kết quả toàn validation.
+
+BC và state-only có head cùng width nhưng khác parameter count do vision branch. Chênh lệch
+quan sát được chỉ mô tả hai pipeline này, chưa cô lập hoàn toàn hiệu ứng nhân quả của ảnh.
+Bài tập: đề xuất image shuffle trong cùng episode và shuffle giữa episode; chỉ ra shortcut mà
+mỗi can thiệp có thể phá. Dùng validation cho can thiệp, giữ test đã mở khỏi việc chọn cấu hình.
+Xem [bảng số đo](../../docs/research_report.md) để phân biệt estimate, interval và hypothesis.

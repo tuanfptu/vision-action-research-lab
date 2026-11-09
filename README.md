@@ -53,9 +53,10 @@ feature key. Camera order and all joint names are stored in checkpoints and mani
 
 ![OpenArm cameras and joint trajectories](docs/figures/openarm_observations.png)
 
-The seeded episode split is **22 train / 4 validation / 4 untouched test**. Training and
-architecture selection read only train/validation episodes. Final test requires an explicit
-command; repeated test-set tuning invalidates the untouched-test interpretation.
+The fixed episode split is **22 train / 4 validation / 4 test**. The 2026-11-08 registered
+study selected its family on validation, froze checkpoint hashes, then evaluated the selected
+family and BC reference across all three seeds on test. That test set is now **used**. Further
+experiments use validation; a new final confirmation needs independent test episodes.
 
 ```bash
 va-lab evaluate --checkpoint runs/openarm_bc/best.pt --split validation
@@ -63,13 +64,40 @@ va-lab evaluate --checkpoint runs/openarm_bc/best.pt --split validation
 va-lab evaluate --checkpoint runs/openarm_bc/best.pt --split test --output runs/final_test.json
 ```
 
-## Executed migration checks
+## Measured research study
 
-**29 tests passed on the GTX 1660 Ti**, including real official data and CUDA gradients.
-Seven policy families trained and reloaded checkpoints on GPU. Eight ACT ablations and four
-same-task transfer arms ran. Independent-scene short rollouts achieved **0/1 success each**;
-exact demonstration-scene reconstruction remains NOT VERIFIED. See the full measured
-[validation report](docs/validation.md), including the undertrained diffusion failure case.
+**33 tests passed on the GTX 1660 Ti**, including official data, CUDA gradients, vectorized
+window equivalence and final-test selection locks. The main GPU study trained seven families
+with three seeds, followed by 18 ACT controls and 15 same-task transfer runs: **54 runs,
+648 epochs**. A separate validation-only camera/resolution control added nine fresh
+three-epoch runs (two/five views at 32/64 pixels), bringing the total to **63 runs / 675 epochs**. All training and model evaluation used CUDA. The official ACT family selected
+on validation achieved test macro-episode action MSE **0.001519 rad²**, versus BC **0.002167
+rad²**, on four fixed test episodes. These are small-sample offline results.
+
+Thirty independent-scene control trials (10 per case, 10 simulated seconds each) achieved
+**0/10 manipulation successes per case**. Video prediction lost to image persistence;
+diffusion remained undertrained. Negative results, paired confidence intervals, runtime,
+raw records and confounds are preserved in the [research report](docs/research_report.md).
+Exact demonstration-scene reconstruction remains NOT VERIFIED.
+
+![Measured GPU study](docs/figures/research_comparison.png)
+
+Read the Vietnamese [research methodology](docs/research_methodology.md) for math,
+source walkthroughs, inference semantics, statistical design and limits of each claim.
+The [historical migration checks](docs/validation.md) remain dated records.
+
+```bash
+# New output directory required. Review the registered config before spending compute.
+python scripts/research.py --output runs/my_registered_study
+python scripts/research_extensions.py --study runs/my_registered_study
+# Freeze family/checkpoint selection before this explicit final-test step:
+python scripts/research.py --output runs/my_registered_study --resume --finalize
+MUJOCO_GL=egl python examples/openarm_followups.py \
+  --study runs/my_registered_study --output runs/my_followups
+```
+
+Full reproduction, including measured-artifact report generation, is documented
+[in Vietnamese](docs/reproduction.md). No dataset videos or checkpoint weights are committed.
 
 ## Eight-lab curriculum
 
@@ -78,7 +106,7 @@ exact demonstration-scene reconstruction remains NOT VERIFIED. See the full meas
 | [00](labs/lab_00_setup/README.md) | Official LeRobot loading, metadata, all joints, cameras, CUDA doctor | Dataset v2.1 is pinned |
 | [01](labs/lab_01_va_fundamentals/README.md) | BC/state-only, GPU train, checkpoints, per-joint RMSE | Offline prediction is not manipulation success |
 | [02](labs/lab_02_act/README.md) | Multi-camera educational ACT plus official LeRobot ACT | Reduced width/depth; no paper reproduction claim |
-| [03](labs/lab_03_act_ablation/README.md) | Chunk/latent/KL/camera/data-budget grid; horizon and ensemble control | Full statistically powered sweep remains PARTIAL |
+| [03](labs/lab_03_act_ablation/README.md) | Chunk/latent/KL/camera/data-budget grid; horizon and ensemble control | Three-seed one-factor study measured; full factorial/power remains PARTIAL |
 | [04](labs/lab_04_diffusion_flow/README.md) | Joint-chunk noise/velocity learning, DDIM/Euler | Compare sampled behavior, not unrelated training losses |
 | [05](labs/lab_05_apt/README.md) | Disjoint OpenArm source/target episodes; four transfer arms | Same task only; genuine cross-task transfer NOT VERIFIED |
 | [06](labs/lab_06_lingbot_va/README.md) | Multi-camera temporal GRU, future video/actions, PSNR visualization | Educational prototype; large world model NOT IMPLEMENTED |

@@ -1,0 +1,8 @@
+.................................                                        [100%]
+=============================== warnings summary ===============================
+tests/test_pipeline.py::test_real_official_openarm
+  /home/tuan/vision-action-research-lab/.venv-gpu/lib/python3.10/site-packages/torchvision/io/_video_deprecation_warning.py:5: UserWarning: The video decoding and encoding capabilities of torchvision are deprecated from version 0.22 and will be removed in version 0.24. We recommend that you migrate to TorchCodec, where we'll consolidate the future decoding/encoding capabilities of PyTorch: https://github.com/pytorch/torchcodec
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+33 passed, 1 warning in 7.06s

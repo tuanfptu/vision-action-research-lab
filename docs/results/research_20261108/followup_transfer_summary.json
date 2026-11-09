@@ -1,0 +1,667 @@
+{
+  "summary": {
+    "random": {
+      "mean": 0.006975879427045584,
+      "ci95": [
+        0.006700458005070686,
+        0.007312706205993891
+      ],
+      "training_seeds": 3,
+      "episodes": 1,
+      "bootstrap_draws": 10000,
+      "bootstrap_seed": 2026,
+      "unit": "rad^2",
+      "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval",
+      "sqrt_macro_mse_rad": 0.08352173026850906,
+      "paired_difference_vs_random": {
+        "mean": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "training_seeds": 3,
+        "episodes": 1,
+        "bootstrap_draws": 10000,
+        "bootstrap_seed": 2026,
+        "unit": "rad^2",
+        "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval"
+      }
+    },
+    "frozen": {
+      "mean": 0.005842352906862895,
+      "ci95": [
+        0.0054978858679533005,
+        0.006271034944802523
+      ],
+      "training_seeds": 3,
+      "episodes": 1,
+      "bootstrap_draws": 10000,
+      "bootstrap_seed": 2026,
+      "unit": "rad^2",
+      "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval",
+      "sqrt_macro_mse_rad": 0.07643528574462775,
+      "paired_difference_vs_random": {
+        "mean": -0.001133526520182689,
+        "ci95": [
+          -0.0015545682981610298,
+          -0.0006434391252696514
+        ],
+        "training_seeds": 3,
+        "episodes": 1,
+        "bootstrap_draws": 10000,
+        "bootstrap_seed": 2026,
+        "unit": "rad^2",
+        "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval"
+      }
+    },
+    "partial": {
+      "mean": 0.005077386274933815,
+      "ci95": [
+        0.004979861434549093,
+        0.005162438843399286
+      ],
+      "training_seeds": 3,
+      "episodes": 1,
+      "bootstrap_draws": 10000,
+      "bootstrap_seed": 2026,
+      "unit": "rad^2",
+      "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval",
+      "sqrt_macro_mse_rad": 0.07125578064223151,
+      "paired_difference_vs_random": {
+        "mean": -0.0018984931521117687,
+        "ci95": [
+          -0.0022228476591408253,
+          -0.001720596570521593
+        ],
+        "training_seeds": 3,
+        "episodes": 1,
+        "bootstrap_draws": 10000,
+        "bootstrap_seed": 2026,
+        "unit": "rad^2",
+        "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval"
+      }
+    },
+    "full": {
+      "mean": 0.004687819474687179,
+      "ci95": [
+        0.0045262412168085575,
+        0.004986469633877277
+      ],
+      "training_seeds": 3,
+      "episodes": 1,
+      "bootstrap_draws": 10000,
+      "bootstrap_seed": 2026,
+      "unit": "rad^2",
+      "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval",
+      "sqrt_macro_mse_rad": 0.06846765276163028,
+      "paired_difference_vs_random": {
+        "mean": -0.0022880599523584047,
+        "ci95": [
+          -0.0027864649891853333,
+          -0.0019280044361948967
+        ],
+        "training_seeds": 3,
+        "episodes": 1,
+        "bootstrap_draws": 10000,
+        "bootstrap_seed": 2026,
+        "unit": "rad^2",
+        "method": "crossed seed/episode percentile bootstrap; descriptive small-sample interval"
+      }
+    }
+  },
+  "records": [
+    {
+      "model": "random",
+      "seed": 7,
+      "episode": 15,
+      "split": "validation",
+      "action_mse_rad2": 0.007312706205993891,
+      "joint_rmse_rad": [
+        0.08342106640338898,
+        0.06113048270344734,
+        0.1492728739976883,
+        0.10410738736391068,
+        0.09173465520143509,
+        0.11034254729747772,
+        0.06628622114658356,
+        0.1377076506614685,
+        0.053140170872211456,
+        0.04249170795083046,
+        0.06809554994106293,
+        0.09946177154779434,
+        0.057718969881534576,
+        0.06359119713306427,
+        0.05200166255235672,
+        6.012672201904934e-06
+      ],
+      "horizon_mse_rad2": [
+        0.005918905138969421,
+        0.00690880324691534,
+        0.007715591229498386,
+        0.00874363724142313
+      ],
+      "valid_targets_per_horizon": [
+        130,
+        129,
+        128,
+        127
+      ],
+      "checkpoint_sha256": "554aa32aae6dfe98fd5b8eee984137dae68a8a9614b1089ef79c2556632493d5",
+      "data_sha256": "b948ce2458b0ce38c99cf038cb67f054adbfdf57f847a1e0e060c552ac00ee17",
+      "sampling_steps": 10,
+      "device": "cuda",
+      "scope": "offline action prediction; not manipulation success",
+      "batch_latency_ms_mean": 2.086915667556847,
+      "batch_latency_ms_p95": 4.645122801230173,
+      "batch_size": 64,
+      "warmup_batches": 1
+    },
+    {
+      "model": "frozen",
+      "seed": 7,
+      "episode": 15,
+      "split": "validation",
+      "action_mse_rad2": 0.005758137907832861,
+      "joint_rmse_rad": [
+        0.0931318923830986,
+        0.0630408301949501,
+        0.11576278507709503,
+        0.10605014115571976,
+        0.07647784054279327,
+        0.08816487342119217,
+        0.04975958541035652,
+        0.12238239496946335,
+        0.052805718034505844,
+        0.04018847644329071,
+        0.04281114786863327,
+        0.07306108623743057,
+        0.06072873994708061,
+        0.05774494633078575,
+        0.07185228168964386,
+        4.06142999054282e-06
+      ],
+      "horizon_mse_rad2": [
+        0.004427141044288874,
+        0.005146020092070103,
+        0.005827087908983231,
+        0.007672840263694525
+      ],
+      "valid_targets_per_horizon": [
+        130,
+        129,
+        128,
+        127
+      ],
+      "checkpoint_sha256": "220f2519de0bfe7bf5a281bf2d4a76b6a7bc6d386a4249fd8453f427e0d2a2e2",
+      "data_sha256": "b948ce2458b0ce38c99cf038cb67f054adbfdf57f847a1e0e060c552ac00ee17",
+      "sampling_steps": 10,
+      "device": "cuda",
+      "scope": "offline action prediction; not manipulation success",
+      "batch_latency_ms_mean": 0.5207393332966603,
+      "batch_latency_ms_p95": 0.5525898002815666,
+      "batch_size": 64,
+      "warmup_batches": 1
+    },
+    {
+      "model": "partial",
+      "seed": 7,
+      "episode": 15,
+      "split": "validation",
+      "action_mse_rad2": 0.0050898585468530655,
+      "joint_rmse_rad": [
+        0.07298939675092697,
+        0.06474094837903976,
+        0.12218271195888519,
+        0.10618263483047485,
+        0.09158981591463089,
+        0.052760474383831024,
+        0.04656299203634262,
+        0.128451868891716,
+        0.04471159726381302,
+        0.03786526247859001,
+        0.04442788287997246,
+        0.049847327172756195,
+        0.05436580255627632,
+        0.05309506133198738,
+        0.04699943959712982,
+        4.746919785247883e-06
+      ],
+      "horizon_mse_rad2": [
+        0.0031797445844858885,
+        0.004432647954672575,
+        0.005490473937243223,
+        0.007308884058147669
+      ],
+      "valid_targets_per_horizon": [
+        130,
+        129,
+        128,
+        127
+      ],
+      "checkpoint_sha256": "a5180a2e79a1c56322081464905cee1e18ad9a4afb4d4b679b528c1ffe88235d",
+      "data_sha256": "b948ce2458b0ce38c99cf038cb67f054adbfdf57f847a1e0e060c552ac00ee17",
+      "sampling_steps": 10,
+      "device": "cuda",
+      "scope": "offline action prediction; not manipulation success",
+      "batch_latency_ms_mean": 0.4943869995865195,
+      "batch_latency_ms_p95": 0.5580381985055283,
+      "batch_size": 64,
+      "warmup_batches": 1
+    },
+    {
+      "model": "full",
+      "seed": 7,
+      "episode": 15,
+      "split": "validation",
+      "action_mse_rad2": 0.0045262412168085575,
+      "joint_rmse_rad": [
+        0.07194924354553223,
+        0.06276708096265793,
+        0.10344938933849335,
+        0.09989110380411148,
+        0.06927864253520966,
+        0.04967692121863365,
+        0.04714641720056534,
+        0.11539289355278015,
+        0.04800458252429962,
+        0.03708362579345703,
+        0.046771783381700516,
+        0.07087771594524384,
+        0.0536947175860405,
+        0.04790624976158142,
+        0.061227478086948395,
+        5.810864422528539e-06
+      ],
+      "horizon_mse_rad2": [
+        0.0030258167535066605,
+        0.004064199049025774,
+        0.004728324711322784,
+        0.006327752955257893
+      ],
+      "valid_targets_per_horizon": [
+        130,
+        129,
+        128,
+        127
+      ],
+      "checkpoint_sha256": "ce7a20a63efb46835dd52da34ad1819900c3d238f7f092d7e46a977133e01f0a",
+      "data_sha256": "b948ce2458b0ce38c99cf038cb67f054adbfdf57f847a1e0e060c552ac00ee17",
+      "sampling_steps": 10,
+      "device": "cuda",
+      "scope": "offline action prediction; not manipulation success",
+      "batch_latency_ms_mean": 0.5064459995386036,
+      "batch_latency_ms_p95": 0.5824330997711513,
+      "batch_size": 64,
+      "warmup_batches": 1
+    },
+    {
+      "model": "random",
+      "seed": 17,
+      "episode": 15,
+      "split": "validation",
+      "action_mse_rad2": 0.006700458005070686,
+      "joint_rmse_rad": [
+        0.06450728327035904,
+        0.05212877318263054,
+        0.151716947555542,
+        0.11091703176498413,
+        0.07846646755933762,
+        0.0826643854379654,
+        0.05482548847794533,
+        0.14409619569778442,
+        0.057428985834121704,
+        0.04401613399386406,
+        0.05683049559593201,
+        0.0958578810095787,
+        0.055081579834222794,
+        0.07285245507955551,
+        0.047463275492191315,
+        4.860172339249402e-06
+      ],
+      "horizon_mse_rad2": [
+        0.005569996777921915,
+        0.006461658049374819,
+        0.006796872243285179,
+        0.008003009483218193
+      ],
+      "valid_targets_per_horizon": [
+        130,
+        129,
+        128,
+        127
+      ],
+      "checkpoint_sha256": "047d0e053f0496cb7bdf1468d98932eded82f2f5d4471ee4e8e75f7f05aa39b3",
+      "data_sha256": "b948ce2458b0ce38c99cf038cb67f054adbfdf57f847a1e0e060c552ac00ee17",
+      "sampling_steps": 10,
+      "device": "cuda",
+      "scope": "offline action prediction; not manipulation success",
+      "batch_latency_ms_mean": 0.5130809998566596,
+      "batch_latency_ms_p95": 0.5930554001679411,
+      "batch_size": 64,
+      "warmup_batches": 1
+    },
+    {
+      "model": "frozen",
+      "seed": 17,
+      "episode": 15,
+      "split": "validation",
+      "action_mse_rad2": 0.0054978858679533005,
+      "joint_rmse_rad": [
+        0.07936225086450577,
+        0.06311825662851334,
+        0.13483232259750366,
+        0.11018694937229156,
+        0.07691127061843872,
+        0.06590945273637772,
+        0.05361981689929962,
+        0.11297162622213364,
+        0.05411022529006004,
+        0.03931000456213951,
+        0.04674991965293884,
+        0.06599780172109604,
+        0.060230374336242676,
+        0.06065961718559265,
+        0.05607285350561142,
+        3.867737177642994e-06
+      ],
+      "horizon_mse_rad2": [
+        0.004225120414048433,
+        0.004940242040902376,
+        0.0058083622716367245,
+        0.007054222282022238
+      ],
+      "valid_targets_per_horizon": [
+        130,
+        129,
+        128,
+        127
+      ],
+      "checkpoint_sha256": "1d9084bc268efdaad9db212b9fcd2dc48477e1abe5ceab41a5b00c2e1b559b6b",
+      "data_sha256": "b948ce2458b0ce38c99cf038cb67f054adbfdf57f847a1e0e060c552ac00ee17",
+      "sampling_steps": 10,
+      "device": "cuda",
+      "scope": "offline action prediction; not manipulation success",
+      "batch_latency_ms_mean": 0.4899879992687299,
+      "batch_latency_ms_p95": 0.5426674000773346,
+      "batch_size": 64,
+      "warmup_batches": 1
+    },
+    {
+      "model": "partial",
+      "seed": 17,
+      "episode": 15,
+      "split": "validation",
+      "action_mse_rad2": 0.004979861434549093,
+      "joint_rmse_rad": [
+        0.06408654153347015,
+        0.05654256418347359,
+        0.1383146047592163,
+        0.10634322464466095,
+        0.07046814262866974,
+        0.04725365713238716,
+        0.050681378692388535,
+        0.12109386175870895,
+        0.04913519695401192,
+        0.03488156571984291,
+        0.05409795418381691,
+        0.051426615566015244,
+        0.05763566493988037,
+        0.05075220763683319,
+        0.049019359052181244,
+        4.8472584239789285e-06
+      ],
+      "horizon_mse_rad2": [
+        0.0038571760524064302,
+        0.004180062562227249,
+        0.005224877968430519,
+        0.00669451430439949
+      ],
+      "valid_targets_per_horizon": [
+        130,
+        129,
+        128,
+        127
+      ],
+      "checkpoint_sha256": "44167418b495c4fab203e8ce1f49076872e9968589594760e538fa034c9fcf73",
+      "data_sha256": "b948ce2458b0ce38c99cf038cb67f054adbfdf57f847a1e0e060c552ac00ee17",
+      "sampling_steps": 10,
+      "device": "cuda",
+      "scope": "offline action prediction; not manipulation success",
+      "batch_latency_ms_mean": 0.5793113341496792,
+      "batch_latency_ms_p95": 0.6288337015575962,
+      "batch_size": 64,
+      "warmup_batches": 1
+    },
+    {
+      "model": "full",
+      "seed": 17,
+      "episode": 15,
+      "split": "validation",
+      "action_mse_rad2": 0.004550747573375702,
+      "joint_rmse_rad": [
+        0.06818320602178574,
+        0.05676905810832977,
+        0.11549710482358932,
+        0.11130061745643616,
+        0.06729041785001755,
+        0.0411653034389019,
+        0.047652050852775574,
+        0.11375246942043304,
+        0.04930596798658371,
+        0.036686934530735016,
+        0.04989170283079147,
+        0.05867419391870499,
+        0.05227626860141754,
+        0.05164267122745514,
+        0.051684848964214325,
+        5.368442998587852e-06
+      ],
+      "horizon_mse_rad2": [
+        0.003287465777248144,
+        0.0038761685136705637,
+        0.004989356733858585,
+        0.006087009329348803
+      ],
+      "valid_targets_per_horizon": [
+        130,
+        129,
+        128,
+        127
+      ],
+      "checkpoint_sha256": "73ed70f25aad842f6e9c28abf28b940c330ec5ef0c625f2a58c1333e52ebb42c",
+      "data_sha256": "b948ce2458b0ce38c99cf038cb67f054adbfdf57f847a1e0e060c552ac00ee17",
+      "sampling_steps": 10,
+      "device": "cuda",
+      "scope": "offline action prediction; not manipulation success",
+      "batch_latency_ms_mean": 0.6023350009248437,
+      "batch_latency_ms_p95": 0.6896851009514648,
+      "batch_size": 64,
+      "warmup_batches": 1
+    },
+    {
+      "model": "random",
+      "seed": 27,
+      "episode": 15,
+      "split": "validation",
+      "action_mse_rad2": 0.006914474070072174,
+      "joint_rmse_rad": [
+        0.0826348215341568,
+        0.0610080286860466,
+        0.14279522001743317,
+        0.10435507446527481,
+        0.0928511992096901,
+        0.10773210972547531,
+        0.04768218472599983,
+        0.12924441695213318,
+        0.05637267976999283,
+        0.03779492899775505,
+        0.051004309207201004,
+        0.10490628331899643,
+        0.05380675941705704,
+        0.0719681829214096,
+        0.057512491941452026,
+        4.752803761221003e-06
+      ],
+      "horizon_mse_rad2": [
+        0.005410828161984682,
+        0.00616076122969389,
+        0.007236196659505367,
+        0.00889496598392725
+      ],
+      "valid_targets_per_horizon": [
+        130,
+        129,
+        128,
+        127
+      ],
+      "checkpoint_sha256": "30b269a9d839a173810dc558345f9aab65fd54990435b556ee5870bfe04434d9",
+      "data_sha256": "b948ce2458b0ce38c99cf038cb67f054adbfdf57f847a1e0e060c552ac00ee17",
+      "sampling_steps": 10,
+      "device": "cuda",
+      "scope": "offline action prediction; not manipulation success",
+      "batch_latency_ms_mean": 0.6061533337439565,
+      "batch_latency_ms_p95": 0.6828897996456362,
+      "batch_size": 64,
+      "warmup_batches": 1
+    },
+    {
+      "model": "frozen",
+      "seed": 27,
+      "episode": 15,
+      "split": "validation",
+      "action_mse_rad2": 0.006271034944802523,
+      "joint_rmse_rad": [
+        0.10440254211425781,
+        0.0676933154463768,
+        0.14000341296195984,
+        0.0953170582652092,
+        0.07975781708955765,
+        0.09965749830007553,
+        0.05120282247662544,
+        0.12145712226629257,
+        0.059778690338134766,
+        0.03713885694742203,
+        0.05163697153329849,
+        0.06394984573125839,
+        0.05758817866444588,
+        0.06127334386110306,
+        0.061007656157016754,
+        2.4345540623471607e-06
+      ],
+      "horizon_mse_rad2": [
+        0.005147646181285381,
+        0.005782926920801401,
+        0.006508329883217812,
+        0.007677593268454075
+      ],
+      "valid_targets_per_horizon": [
+        130,
+        129,
+        128,
+        127
+      ],
+      "checkpoint_sha256": "664bb21cdf5eaf08a4c24a72069705b0e8a1d3d9bb78737f337fd085d8189e7e",
+      "data_sha256": "b948ce2458b0ce38c99cf038cb67f054adbfdf57f847a1e0e060c552ac00ee17",
+      "sampling_steps": 10,
+      "device": "cuda",
+      "scope": "offline action prediction; not manipulation success",
+      "batch_latency_ms_mean": 0.43083433289818157,
+      "batch_latency_ms_p95": 0.4382165010611061,
+      "batch_size": 64,
+      "warmup_batches": 1
+    },
+    {
+      "model": "partial",
+      "seed": 27,
+      "episode": 15,
+      "split": "validation",
+      "action_mse_rad2": 0.005162438843399286,
+      "joint_rmse_rad": [
+        0.08186426758766174,
+        0.05779901146888733,
+        0.11619890481233597,
+        0.10212758183479309,
+        0.07275953143835068,
+        0.0856560692191124,
+        0.04839961975812912,
+        0.11505940556526184,
+        0.05438896641135216,
+        0.03928573802113533,
+        0.042843662202358246,
+        0.06486407667398453,
+        0.06111319735646248,
+        0.053027279675006866,
+        0.057628434151411057,
+        3.3017724945239024e-06
+      ],
+      "horizon_mse_rad2": [
+        0.004155660048127174,
+        0.004849020857363939,
+        0.005122416652739048,
+        0.006551690865308046
+      ],
+      "valid_targets_per_horizon": [
+        130,
+        129,
+        128,
+        127
+      ],
+      "checkpoint_sha256": "908221594a7f9064f9ef39651546c4a02a7e5d119b16c9c8ccd990854087f6cf",
+      "data_sha256": "b948ce2458b0ce38c99cf038cb67f054adbfdf57f847a1e0e060c552ac00ee17",
+      "sampling_steps": 10,
+      "device": "cuda",
+      "scope": "offline action prediction; not manipulation success",
+      "batch_latency_ms_mean": 0.4473866659585231,
+      "batch_latency_ms_p95": 0.4973352981323842,
+      "batch_size": 64,
+      "warmup_batches": 1
+    },
+    {
+      "model": "full",
+      "seed": 27,
+      "episode": 15,
+      "split": "validation",
+      "action_mse_rad2": 0.004986469633877277,
+      "joint_rmse_rad": [
+        0.07948726415634155,
+        0.05258877947926521,
+        0.12358911335468292,
+        0.101434625685215,
+        0.0685405284166336,
+        0.0806490033864975,
+        0.05097081512212753,
+        0.11231045424938202,
+        0.051036763936281204,
+        0.035439129918813705,
+        0.04430164769291878,
+        0.06182553246617317,
+        0.0533456988632679,
+        0.0506734736263752,
+        0.06052643433213234,
+        4.233677827869542e-06
+      ],
+      "horizon_mse_rad2": [
+        0.003947053570300341,
+        0.0046563227660954,
+        0.0049792565405368805,
+        0.006393055431544781
+      ],
+      "valid_targets_per_horizon": [
+        130,
+        129,
+        128,
+        127
+      ],
+      "checkpoint_sha256": "ad1296bf2feb63d51fda235c09a21ba0a41934065647c22589a97f870bc5d26d",
+      "data_sha256": "b948ce2458b0ce38c99cf038cb67f054adbfdf57f847a1e0e060c552ac00ee17",
+      "sampling_steps": 10,
+      "device": "cuda",
+      "scope": "offline action prediction; not manipulation success",
+      "batch_latency_ms_mean": 0.48493666569508304,
+      "batch_latency_ms_p95": 0.5411871024989523,
+      "batch_size": 64,
+      "warmup_batches": 1
+    }
+  ],
+  "scope": "same-task initialization; one target validation episode, seed uncertainty only; normalization-shift confound retained"
+}

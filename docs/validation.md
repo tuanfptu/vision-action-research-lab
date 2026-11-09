@@ -1,4 +1,35 @@
-# OpenArm migration validation — 2026-11-02
+# OpenArm validation history
+
+## Research extension — 2026-11-08
+
+A separate validation-only camera/resolution control completed nine fresh three-epoch
+GPU runs: 2view32, 2view64, 5view64, three seeds each, matched batch64/accumulation1.
+The new full five-view cache has shape [5405,5,3,64,64], all 150 video streams verified with
+maximum timestamp error 4.4504801444134046e-7 s. Total extension: 63 runs / 675 epochs.
+No test reselection was performed. GPU telemetry and measured comparisons are in the report.
+
+Actual CUDA main study: 21 main policy runs, 18 ACT one-factor controls and 15 same-task transfer
+runs; 54 runs / 648 epochs. Three training seeds (7/17/27), fixed episode splits, train-only
+normalization. Official ACT was selected on validation before checkpoint hashes were locked
+and final test evaluated. Original final-test episodes are now used, not untouched.
+
+`env -u PYTHONPATH VA_LAB_INTEGRATION=1 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv-gpu/bin/pytest -q`:
+**33 passed**, one upstream torchvision video deprecation warning. Ruff lint and format checks
+passed; pip check found no broken requirements. New tests cover exact CPU/CUDA window/mask
+agreement, reproducible shuffle, shared tensor storage, paired bootstrap, missing/duplicate
+measurements, immutable selection, test finalization and resume mismatch rejection.
+
+Nine deterministic controller fault cases passed. Thirty independent-scene trials (three cases,
+10 reset seeds each, 300 observation ticks each) completed; every case measured 0/10 successes.
+Official ACT final-test macro MSE was 0.001518766 rad², BC 0.002167193 rad². These are offline
+prediction scores on four episodes, not manipulation success. Video lost to image persistence;
+diffusion sampled action error stayed very high. Full measured tables, raw JSON, CIs and
+scientific plots are in [research_report.md](research_report.md).
+
+## Historical migration validation — 2026-11-02
+
+The sections below retain the state and measurements as of 2026-11-02. Statements about an
+untouched test set and unrun multi-seed experiments refer to that historical date only.
 
 Feature branch: feat/openarm-migration. Previous main implementation and local data/checkpoints
 are preserved. This file records executed evidence; GPU experiment results are added only after

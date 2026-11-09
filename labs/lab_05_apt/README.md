@@ -60,7 +60,8 @@ Download cache lần đầu theo README, bỏ qua nếu cache đã tồn tại. 
 Shapes đúng và loss/gradient hữu hạn là kiểm tra software path; không phải bằng chứng học task.
 Chỉ báo số được ghi ở [validation](../../docs/validation.md). Report device, peak VRAM, episode
 split, raw per-joint RMSE và camera names. Test episodes chỉ truy cập bằng evaluate --split test
-sau model selection; các thí nghiệm trong migration mặc định giữ test chưa đánh giá.
+sau model selection. Migration ban đầu chưa mở test; study 08/11/2026 đã đánh giá test sau
+selection lock. Không coi split này là untouched cho việc tuning tiếp theo.
 
 ## 10. Bài tập
 
@@ -93,3 +94,21 @@ tương thích, và điều gì mới chỉ xác nhận offline regression?
 [LeRobot v0.3.3](https://github.com/huggingface/lerobot/tree/v0.3.3).
 Paper/implementation ACT, Diffusion/Flow, APT, LingBot và Helix được ghi ở
 [references](../../docs/references.md), cùng license và ghi chú educational scope.
+
+## 14. Confound cần xử lý trước claim transfer
+
+Encoder ở đây chứa CNN và fusion với normalized state. Khi copy encoder từ source sang target,
+state statistics thay đổi; cùng joint angle có thể thành feature khác. Với source μs,σs và
+target μt,σt, có thể giữ hàm state ban đầu bằng affine compensation:
+
+    Ws_new = Ws_old · diag(σt / σs)
+    b_new = b_old + Ws_old · ((μt − μs) / σs)
+
+Công thức chỉ áp dụng phần state columns của linear fusion, không sửa ảnh hoặc action head.
+Implementation hiện **chưa** compensation; báo cáo phải giữ confound này rõ ràng. Frozen và
+partial arm đặc biệt nhạy vì một phần encoder không thể tự thích nghi.
+
+APT gốc pretrain action expert VA prior trước language fusion. Copy một CNN+fusion ở đây
+không tái lập action expert/VLM/gated fusion đó. Bài tập: thiết kế task-level split, target budget
+curve, equal-total-compute baseline và negative-transfer criterion. Chỉ thêm nhiều episode cùng
+task không biến protocol thành cross-task transfer. [Phân tích đầy đủ](../../docs/research_methodology.md#6-va-prior-và-transfer-kiểm-soát-được-gì).
